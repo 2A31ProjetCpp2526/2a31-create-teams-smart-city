@@ -1,0 +1,9 @@
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/Materiel.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/edit_cache.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/rebuild_cache.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/list_install_components.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/install.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/install/local.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/install/strip.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/Materiel_autogen_timestamp_deps.dir
+C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/CMakeFiles/Materiel_autogen.dir

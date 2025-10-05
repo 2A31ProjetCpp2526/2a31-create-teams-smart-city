@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-4bed1e0767171af16f0e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Materiel",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Materiel::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Materiel-Debug-cc9321348f5e436334bc.json",
+					"name" : "Materiel",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Materiel_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Materiel_autogen-Debug-48fc096cdf03aa852fc5.json",
+					"name" : "Materiel_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "Materiel_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Materiel_autogen_timestamp_deps-Debug-9ec2b146e68091fd62c2.json",
+					"name" : "Materiel_autogen_timestamp_deps",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/proj qt/Materiel/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug",
+		"source" : "C:/proj qt/Materiel"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
