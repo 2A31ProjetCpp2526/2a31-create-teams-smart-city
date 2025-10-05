@@ -1,0 +1,13 @@
+build*/
+*.pro.user
+*.user
+*.autosave
+.qtc_clangd/
+.DS_Store
+Thumbs.db
+*.o
+*.obj
+*.exe
+*.dll
+*.a
+*.lib
