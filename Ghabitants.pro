@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     connection.cpp \
+    habitantcrud.cpp \
     main.cpp \
     mainwindow.cpp \
     poubelle.cpp \
@@ -17,6 +18,7 @@ SOURCES += \
 
 HEADERS += \
     connection.h \
+    habitantcrud.h \
     mainwindow.h \
     poubelle.h \
     zone.h
