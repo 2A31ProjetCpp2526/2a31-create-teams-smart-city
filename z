@@ -1,0 +1,10 @@
+#ifndef Z_H
+#define Z_H
+
+class metiers
+{
+public:
+    metiers();
+};
+
+#endif // Z_H

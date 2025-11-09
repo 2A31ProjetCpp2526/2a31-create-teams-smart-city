@@ -2,24 +2,73 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "geszone.h"
+#include <QLineEdit>
+#include <QPushButton>
+#include <QTableView>
+#include <QComboBox>
+#include "zone.h"
+#include <QMainWindow>
+#include <QTableWidget>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QVBoxLayout>
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+#include "connection.h"
+
+
+
+
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-private:
-    Ui::MainWindow *ui;
+private slots:
+    void afficherZones();
+    void ajouterZone();
+    void supprimerZone();
+    void modifierZone();
+    void afficherResponsables();
+    void afficherMiniMap();
 
-    geszone* geszoneWindow;  // only remaining window
+
+private:
+    // === Widgets ===
+    QLineEdit *idEdit;
+    QLineEdit *nomEdit;
+    QLineEdit *typeEdit;
+    QLineEdit *supEdit;
+    QLineEdit *locEdit;
+    QLineEdit *respEdit;
+    QLineEdit *etatEdit;
+
+    QPushButton *addBtn;
+    QPushButton *deleteBtn;
+    QPushButton *updateBtn;
+    QPushButton *refreshBtn;
+
+    QTableView *tableView;
+
+
+    QTableWidget *tableResponsables;
+    QGraphicsView *mapView;
+    QGraphicsScene *scene;
+
+
+
+    void setupUI();
+
+    // === Data ===
+    Zone Ztmp;
+
+
+
+
+
 };
 
 #endif // MAINWINDOW_H
