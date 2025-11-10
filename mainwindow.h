@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include "zone.h"
 #include "poubelle.h"
+#include "habitantcrud.h"
+#include "vehiculecrud.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -68,12 +70,42 @@ private slots:
     void afficherPoubelles();
     void modZone();   // Modify Zone
     void modPoubelle(); // Modify Poubelle
+    // === CRUD HABITANTS ===
+    void on_pushButton_ajoutH_clicked();
+    void on_pushButton_modifH_clicked();
+    void on_pushButton_suppH_clicked();
+    void on_pushButton_afficheH_clicked();
+    // === CRUD VEHICULES ===
+    void on_btn_vehicule_ajouter_clicked();
+    void on_btn_vehicule_modifier_clicked();
+    void on_btn_vehicule_supprimer_clicked();
+    void on_btn_vehicule_rechercher_clicked();
+    void on_btn_vehicule_afficher_clicked();
+    void on_tableView_vehicule_clicked(const QModelIndex &index);
+
+
+
+    // === Recherche & Tri ===
+    void on_pushButton_rechH_clicked();
+    void on_pushButton_trieH_clicked();
+    void on_tableView_habitants_clicked(const QModelIndex &index);
 
     // Generic delete for table rows
     void supprimerEtDecalerLignes();
 
 private:
     Ui::MainWindow *ui;
+    void chargerDonneesTable();
+    void rechercherTexte(const QString &texte);
+    // Validation des valeurs autorisées
+    QStringList allowedStatuses;
+    void chargerStatutsAutorises();
+    bool statutAutorise(const QString &value) const;
+    void styliserChampsSaisie();
+    void saveLastHabitantId(int id);
+    void loadLastHabitantSelection();
+    void populateEditsFromRow(int row);
+
 };
 
 #endif // MAINWINDOW_H

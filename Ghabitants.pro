@@ -10,15 +10,19 @@ CONFIG += c++17
 
 SOURCES += \
     connection.cpp \
+    habitantcrud.cpp \
     main.cpp \
     mainwindow.cpp \
     poubelle.cpp \
+    vehiculecrud.cpp \
     zone.cpp
 
 HEADERS += \
     connection.h \
+    habitantcrud.h \
     mainwindow.h \
     poubelle.h \
+    vehiculecrud.h \
     zone.h
 
 FORMS += \
