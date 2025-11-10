@@ -4,8 +4,12 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QPushButton>
+#include <QTableView>
+#include <QSqlQueryModel>
 #include "zone.h"
 #include "poubelle.h"
+#include "habitantcrud.h"
+#include "personnel.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,6 +27,11 @@ public:
 
 private slots:
     // Navigation buttons
+    void on_ajouterperso_clicked();
+    void on_Modifierperso_clicked();
+    void on_Supprimerperso_clicked();
+    void on_Affperso_clicked();
+    void on_Modifierperso_2_clicked(); // Bouton d'affichage
     void on_pushButton_clicked();
     void on_pushButton2_clicked();
     void on_pushButton3_clicked();
@@ -68,12 +77,33 @@ private slots:
     void afficherPoubelles();
     void modZone();   // Modify Zone
     void modPoubelle(); // Modify Poubelle
+    // === CRUD HABITANTS ===
+    void on_pushButton_ajoutH_clicked();
+    void on_pushButton_modifH_clicked();
+    void on_pushButton_suppH_clicked();
+    void on_pushButton_afficheH_clicked();
+
+    // === Recherche & Tri ===
+    void on_pushButton_rechH_clicked();
+    void on_pushButton_trieH_clicked();
+    void on_tableView_habitants_clicked(const QModelIndex &index);
 
     // Generic delete for table rows
     void supprimerEtDecalerLignes();
 
 private:
     Ui::MainWindow *ui;
+    void chargerDonneesTable();
+    void rechercherTexte(const QString &texte);
+    // Validation des valeurs autorisées
+    QStringList allowedStatuses;
+    void chargerStatutsAutorises();
+    bool statutAutorise(const QString &value) const;
+    void styliserChampsSaisie();
+    void saveLastHabitantId(int id);
+    void loadLastHabitantSelection();
+    void populateEditsFromRow(int row);
+    void afficherPersonnel(QTableView *tableView, QSqlQueryModel *model);
 };
 
 #endif // MAINWINDOW_H
