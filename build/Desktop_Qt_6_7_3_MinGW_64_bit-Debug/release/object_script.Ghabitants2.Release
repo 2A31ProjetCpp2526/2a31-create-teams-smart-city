@@ -1,0 +1,12 @@
+release/connection.o
+release/habitantcrud.o
+release/main.o
+release/mainwindow.o
+release/personnel.o
+release/poubelle.o
+release/vehiculecrud.o
+release/demandecrud.o
+release/satisfaction.o
+release/zone.o
+release/affectationp.o
+release/moc_mainwindow.o

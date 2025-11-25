@@ -117,6 +117,18 @@ private slots:
     void on_suppdemande_clicked();
     void on_statdemande_clicked();
 
+    void on_Affecter_clicked();
+    void on_Refresh_clicked();
+    void on_Resolution_clicked();
+    void on_Resolu_clicked();
+
+    void on_pushButton_detailsSuivi_clicked();
+    void on_pushButton_exportSuivi_clicked();
+
+    void on_pushButton_40_clicked(); // Rechercher des personnels (les metiers basiques)
+    void on_comboBox_10_currentIndexChanged(int index); // Tri des personnels
+    void on_pushButton_18_clicked(); // Exporter personnels en PDF
+
     void on_btn_satisfaction_refresh_clicked();
     void on_btn_sondage_submit_clicked();
     void on_affichersatisfaction_clicked();
@@ -134,13 +146,23 @@ private:
     void chargerStatutsAutorises();
     bool statutAutorise(const QString &value) const;
     void styliserChampsSaisie();
+    void styliserTableView(QTableView *view);
+    void styliserBoutonPrincipal(QPushButton *button);
+    void styliserModulePersonnels();
+    void updateAffectationSummary();
+    QLabel *affectationSummaryLabel;
+    void ouvrirDemandeDansSuivi(int idDemande);
     void saveLastHabitantId(int id);
     void loadLastHabitantSelection();
     void populateEditsFromRow(int row);
     void afficherPersonnel(QTableView *tableView, QSqlQueryModel *model);
+    int suggestNextPersonnelId() const;
     void refreshSatisfactionTable();
     QTableView* resolveSatisfactionTableView() const;
     void refreshDemandeTable();
+    void chargerTablesAffectation(bool urgences = false, bool onlyDisponibles = false);
+    void remplirTableSuivi();
+    void filtrerUrgencesSuivi(bool urgencesSeulement);
     void updateSatisfactionKpi();
 
 };

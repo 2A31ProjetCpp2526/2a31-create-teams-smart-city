@@ -18,7 +18,8 @@ SOURCES += \
     vehiculecrud.cpp \
     demandecrud.cpp \
     satisfaction.cpp \
-    zone.cpp
+    zone.cpp \
+    affectationp.cpp
 
 HEADERS += \
     connection.h \
@@ -29,7 +30,8 @@ HEADERS += \
     vehiculecrud.h \
     demandecrud.h \
     satisfaction.h \
-    zone.h
+    zone.h \
+    affectationp.h
 
 FORMS += \
     mainwindow.ui

@@ -17,6 +17,7 @@
 #include "vehiculecrud.h"
 #include "satisfaction.h"
 #include "demandecrud.h"
+#include "affectationp.h"
 #include <QSqlError>
 #include <QSqlQueryModel>
 #include <QCompleter>
@@ -57,6 +58,9 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QPixmap>
+#include <QPrinter>
+#include <QPageLayout>
+#include <QPainter>
 
 static const double DEMANDE_DELAI_HEURES = 8.0;
 
@@ -65,6 +69,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    affectationSummaryLabel = nullptr;
     qApp->setStyleSheet(
         "QMessageBox QLabel, QInputDialog QLabel, QLineEdit { color: black; }"
         "QMessageBox QPushButton, QInputDialog QPushButton { color: black; }"
@@ -122,6 +127,23 @@ MainWindow::MainWindow(QWidget *parent)
             "voirie/infrastructures",
             "réclamation service",
             "autre"
+        });
+    }
+
+    // Compétence du personnel : utiliser une combobox avec des valeurs prédéfinies
+    if (ui->competence && ui->competence->count() == 0) {
+        ui->competence->addItems(QStringList{
+            "problème technique",
+            "problème numérique",
+            "problème civique",
+            "Logement et habitat",
+            "Environnement et propreté",
+            "Infrastructures",
+            "Nouvel élément",
+            "transport",
+            "Sécurité",
+            "Vie sociale",
+            "Éducation"
         });
     }
 
@@ -230,6 +252,473 @@ MainWindow::MainWindow(QWidget *parent)
     }
     // Ne pas auto-rafraîchir au démarrage pour éviter d'affecter une mauvaise vue
     // L'utilisateur déclenchera l'affichage via les boutons.
+
+    // Styliser le module de gestion des personnels (tables + boutons)
+    styliserModulePersonnels();
+
+    // Boutons supplémentaires sur la page d'affectation pour un usage plus professionnel
+    if (ui->page_15) {
+        // Bandeau de résumé dynamique sous les tableaux
+        if (!affectationSummaryLabel) {
+            affectationSummaryLabel = new QLabel(ui->page_15);
+            affectationSummaryLabel->setGeometry(60, 390, 1070, 40);
+            affectationSummaryLabel->setAlignment(Qt::AlignCenter);
+            affectationSummaryLabel->setWordWrap(true);
+            affectationSummaryLabel->setStyleSheet(
+                "QLabel { color:#0a1a2f; font-size:11px; background-color:transparent; }");
+        }
+
+        // Boutons de filtre rapides
+        QPushButton *btnUrgences = new QPushButton(tr("⚠ Urgences"), ui->page_15);
+        btnUrgences->setGeometry(60, 360, 110, 26);
+        styliserBoutonPrincipal(btnUrgences);
+        connect(btnUrgences, &QPushButton::clicked, this, [this]() {
+            chargerTablesAffectation(true, false);
+        });
+
+        QPushButton *btnDispo = new QPushButton(tr("✅ Disponibles"), ui->page_15);
+        btnDispo->setGeometry(180, 360, 130, 26);
+        styliserBoutonPrincipal(btnDispo);
+        connect(btnDispo, &QPushButton::clicked, this, [this]() {
+            chargerTablesAffectation(false, true);
+        });
+
+        QPushButton *btnTout = new QPushButton(tr("↺ Tout"), ui->page_15);
+        btnTout->setGeometry(320, 360, 90, 26);
+        styliserBoutonPrincipal(btnTout);
+        connect(btnTout, &QPushButton::clicked, this, [this]() {
+            chargerTablesAffectation(false, false);
+        });
+
+        QPushButton *btnDetails = new QPushButton(tr("🔍 Détails demande"), ui->page_15);
+        btnDetails->setGeometry(380, 440, 120, 29);
+        styliserBoutonPrincipal(btnDetails);
+
+        connect(btnDetails, &QPushButton::clicked, this, [this]() {
+            if (!ui || !ui->tableView_habitants_2)
+                return;
+
+            QItemSelectionModel *selDem = ui->tableView_habitants_2->selectionModel();
+            if (!selDem || !selDem->hasSelection()) {
+                QMessageBox::information(this, tr("Détails demande"),
+                                         tr("Veuillez sélectionner une demande."));
+                return;
+            }
+            int rowDem = selDem->selectedRows().first().row();
+            QAbstractItemModel *modelDem = ui->tableView_habitants_2->model();
+            if (!modelDem)
+                return;
+
+            bool okId = false;
+            int idDemande = modelDem->index(rowDem, 0).data().toInt(&okId);
+            if (!okId || idDemande <= 0) {
+                QMessageBox::warning(this, tr("Détails demande"),
+                                     tr("ID de demande invalide."));
+                return;
+            }
+
+            auto fmtDate = [](const QDateTime &dt) {
+                return dt.isValid() ? dt.toString("dd/MM/yyyy HH:mm") : QString("-");
+            };
+
+            QSqlQuery q;
+            q.prepare("SELECT ID_DEMANDE, ID_HABITANT, TYPE_PROBLEME, DESCRIPTION, STATUT, "
+                      "DATE_CREATION, DATE_AFFECTATION, DATE_RESOLUTION_INTERNE, DATE_RESOLUTION_FINALE "
+                      "FROM DEMANDE WHERE ID_DEMANDE = :id");
+            q.bindValue(":id", idDemande);
+            if (!q.exec()) {
+                QMessageBox::warning(this, tr("Détails demande"),
+                                     tr("Erreur SQL : %1").arg(q.lastError().text()));
+                return;
+            }
+            if (!q.next()) {
+                QMessageBox::information(this, tr("Détails demande"),
+                                         tr("Aucune demande trouvée pour l'ID %1.").arg(idDemande));
+                return;
+            }
+
+            int idDem    = q.value(0).toInt();
+            int idHab    = q.value(1).toInt();
+            QString type = q.value(2).toString();
+            QString desc = q.value(3).toString();
+            QString statut = q.value(4).toString();
+            QDateTime dc  = q.value(5).toDateTime();
+            QDateTime da  = q.value(6).toDateTime();
+            QDateTime dr  = q.value(7).toDateTime();
+            QDateTime dru = q.value(8).toDateTime();
+
+            // Petit dialogue professionnel avec tableau récapitulatif
+            QDialog dlg(this);
+            dlg.setWindowTitle(tr("Détails demande"));
+            dlg.setModal(true);
+            dlg.resize(480, 320);
+
+            QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+            QTableWidget *tw = new QTableWidget(&dlg);
+            tw->setColumnCount(2);
+            tw->setRowCount(8);
+            tw->setHorizontalHeaderLabels(QStringList() << tr("Champ") << tr("Valeur"));
+            tw->verticalHeader()->setVisible(false);
+            tw->horizontalHeader()->setStretchLastSection(true);
+            tw->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+            tw->setEditTriggers(QAbstractItemView::NoEditTriggers);
+            tw->setSelectionMode(QAbstractItemView::NoSelection);
+            tw->setAlternatingRowColors(true);
+
+            // Palette et style pour un rendu plus professionnel
+            QPalette palTable = tw->palette();
+            palTable.setColor(QPalette::Base, Qt::white);
+            palTable.setColor(QPalette::AlternateBase, QColor("#f7f9fc"));
+            palTable.setColor(QPalette::Text, QColor("#0a1a2f"));
+            palTable.setColor(QPalette::WindowText, QColor("#0a1a2f"));
+            tw->setPalette(palTable);
+            tw->setStyleSheet(
+                "QTableWidget { border: 1px solid #d0d7e2; gridline-color:#e1e5ee; }"
+                "QHeaderView::section { background-color:#0d3273; color:white; font-weight:600; padding:4px 8px; border:none; }"
+                "QTableWidget::item { padding:3px 6px; }");
+
+            auto setRow = [tw](int row, const QString &champ, const QString &val) {
+                QTableWidgetItem *c = new QTableWidgetItem(champ);
+                QFont f = c->font();
+                f.setBold(true);
+                c->setFont(f);
+                tw->setItem(row, 0, c);
+
+                QTableWidgetItem *v = new QTableWidgetItem(val);
+                tw->setItem(row, 1, v);
+            };
+
+            setRow(0, tr("ID demande"), QString::number(idDem));
+            setRow(1, tr("ID habitant"), QString::number(idHab));
+            setRow(2, tr("Type"), type);
+            setRow(3, tr("Statut"), statut);
+            setRow(4, tr("Création"), fmtDate(dc));
+            setRow(5, tr("Affectation"), fmtDate(da));
+            setRow(6, tr("Résolution interne"), fmtDate(dr));
+            setRow(7, tr("Résolution finale"), fmtDate(dru));
+
+            tw->resizeColumnsToContents();
+            layout->addWidget(tw);
+
+            // Zone de texte pour la description
+            QLabel *lblDesc = new QLabel(tr("Description :"), &dlg);
+            lblDesc->setStyleSheet("color: #0a1a2f; font-weight: 600;");
+            layout->addWidget(lblDesc);
+
+            QTextEdit *editDesc = new QTextEdit(&dlg);
+            editDesc->setReadOnly(true);
+            editDesc->setText(desc);
+            editDesc->setStyleSheet("color: black; background-color: white;");
+            editDesc->setMinimumHeight(80);
+            layout->addWidget(editDesc);
+
+            // Bouton Fermer
+            QPushButton *btnClose = new QPushButton(tr("Fermer"), &dlg);
+            btnClose->setCursor(Qt::PointingHandCursor);
+            QObject::connect(btnClose, &QPushButton::clicked, &dlg, &QDialog::accept);
+            QHBoxLayout *bottomLayout = new QHBoxLayout();
+            bottomLayout->addStretch();
+            bottomLayout->addWidget(btnClose);
+            layout->addLayout(bottomLayout);
+
+            dlg.exec();
+        });
+
+        QPushButton *btnAnnuler = new QPushButton(tr("⟲ Annuler affectation"), ui->page_15);
+        btnAnnuler->setGeometry(620, 440, 140, 29);
+        styliserBoutonPrincipal(btnAnnuler);
+
+        connect(btnAnnuler, &QPushButton::clicked, this, [this]() {
+            if (!ui || !ui->tableView_habitants_2)
+                return;
+
+            QItemSelectionModel *selDem = ui->tableView_habitants_2->selectionModel();
+            if (!selDem || !selDem->hasSelection()) {
+                QMessageBox::information(this, tr("Annuler affectation"),
+                                         tr("Veuillez sélectionner une demande."));
+                return;
+            }
+
+            int rowDem = selDem->selectedRows().first().row();
+            QAbstractItemModel *modelDem = ui->tableView_habitants_2->model();
+            if (!modelDem)
+                return;
+
+            bool okIdDem = false;
+            int idDemande = modelDem->index(rowDem, 0).data().toInt(&okIdDem);
+            if (!okIdDem || idDemande <= 0) {
+                QMessageBox::warning(this, tr("Annuler affectation"),
+                                     tr("ID de demande invalide."));
+                return;
+            }
+
+            if (QMessageBox::question(this, tr("Annuler affectation"),
+                                      tr("Voulez-vous vraiment annuler l'affectation de la demande %1 ?").arg(idDemande))
+                != QMessageBox::Yes)
+                return;
+
+            QString error;
+            if (!AffectationP::annulerAffectation(idDemande, error)) {
+                QMessageBox::critical(this, tr("Annuler affectation"),
+                                      tr("Échec de l'annulation : %1").arg(error));
+                return;
+            }
+
+            chargerTablesAffectation();
+            refreshDemandeTable();
+        });
+
+        // Bouton Auto-affecter (utilise le personnel recommandé)
+        QPushButton *btnAuto = new QPushButton(tr("⭐ Auto-affecter"), ui->page_15);
+        btnAuto->setGeometry(760, 440, 130, 29);
+        styliserBoutonPrincipal(btnAuto);
+        connect(btnAuto, &QPushButton::clicked, this, [this]() {
+            if (!ui || !ui->tableView_habitants_2 || !ui->tableView_personel_2)
+                return;
+
+            QItemSelectionModel *selDem = ui->tableView_habitants_2->selectionModel();
+            if (!selDem || !selDem->hasSelection()) {
+                QMessageBox::information(this, tr("Auto-affectation"),
+                                         tr("Veuillez d'abord sélectionner une demande."));
+                return;
+            }
+
+            int row = selDem->selectedRows().first().row();
+            QAbstractItemModel *demModel = ui->tableView_habitants_2->model();
+            QAbstractItemModel *persModel = ui->tableView_personel_2->model();
+            if (!demModel || !persModel)
+                return;
+
+            QString typeProb = demModel->index(row, 2).data().toString();
+            QString typeLower = typeProb.toLower();
+
+            int bestRow = -1;
+            int bestScore = 0;
+            for (int r = 0; r < persModel->rowCount(); ++r) {
+                QString comp = persModel->index(r, 5).data().toString().toLower();
+                QString dispo = persModel->index(r, 4).data().toString().toLower();
+                int score = 0;
+                if (dispo.contains("disponible")) score += 2;
+                if (typeLower.contains("propret") || typeLower.contains("déchet") || typeLower.contains("dechet")) {
+                    if (comp.contains("propret") || comp.contains("déchet") || comp.contains("dechet")) score += 3;
+                }
+                if (typeLower.contains("éclairage") || typeLower.contains("eclairage")) {
+                    if (comp.contains("éclairage") || comp.contains("eclairage") || comp.contains("électric")) score += 3;
+                }
+                if (typeLower.contains("sécurité") || typeLower.contains("securite")) {
+                    if (comp.contains("sécurité") || comp.contains("securite")) score += 3;
+                }
+                if (typeLower.contains("eau") || typeLower.contains("électricité") || typeLower.contains("electricite")) {
+                    if (comp.contains("réseau") || comp.contains("reseau") || comp.contains("eau") || comp.contains("électric")) score += 3;
+                }
+                if (score > bestScore) { bestScore = score; bestRow = r; }
+            }
+
+            if (bestRow < 0 || bestScore <= 0) {
+                QMessageBox::information(this, tr("Auto-affectation"),
+                                         tr("Aucun personnel recommandé trouvé pour ce type de problème."));
+                return;
+            }
+
+            ui->tableView_personel_2->selectRow(bestRow);
+            on_Affecter_clicked();
+        });
+
+        // Bouton pour basculer la disponibilité du personnel sélectionné
+        QPushButton *btnToggleDispo = new QPushButton(tr("⏱ Bascule dispo"), ui->page_15);
+        btnToggleDispo->setGeometry(240, 440, 130, 29);
+        styliserBoutonPrincipal(btnToggleDispo);
+        connect(btnToggleDispo, &QPushButton::clicked, this, [this]() {
+            if (!ui || !ui->tableView_personel_2)
+                return;
+
+            QItemSelectionModel *sel = ui->tableView_personel_2->selectionModel();
+            if (!sel || !sel->hasSelection()) {
+                QMessageBox::information(this, tr("Disponibilité"),
+                                         tr("Veuillez sélectionner un personnel."));
+                return;
+            }
+
+            int row = sel->selectedRows().first().row();
+            QAbstractItemModel *m = ui->tableView_personel_2->model();
+            if (!m)
+                return;
+
+            QString cin = m->index(row, 0).data().toString();
+            QString dispo = m->index(row, 4).data().toString();
+            if (cin.isEmpty())
+                return;
+
+            QString newDispo;
+            if (dispo.compare("Disponible", Qt::CaseInsensitive) == 0)
+                newDispo = "Occupe";
+            else
+                newDispo = "Disponible";
+
+            QSqlQuery q;
+            q.prepare("UPDATE PERSONNEL SET DISPONIBILITE = :d WHERE CIN = :c");
+            q.bindValue(":d", newDispo);
+            q.bindValue(":c", cin);
+            if (!q.exec()) {
+                QMessageBox::warning(this, tr("Disponibilité"),
+                                     tr("Erreur SQL : %1").arg(q.lastError().text()));
+                return;
+            }
+
+            chargerTablesAffectation();
+        });
+
+        // Menu contextuel sur la table des demandes (page d'affectation)
+        if (ui->tableView_habitants_2) {
+            ui->tableView_habitants_2->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(ui->tableView_habitants_2, &QTableView::customContextMenuRequested,
+                    this, [this](const QPoint &pos) {
+                        if (!ui || !ui->tableView_habitants_2)
+                            return;
+
+                        QModelIndex idx = ui->tableView_habitants_2->indexAt(pos);
+                        if (!idx.isValid()) {
+                            if (!ui->tableView_habitants_2->selectionModel() ||
+                                !ui->tableView_habitants_2->selectionModel()->hasSelection())
+                                return;
+                            idx = ui->tableView_habitants_2->selectionModel()->selectedRows().first();
+                        }
+
+                        int row = idx.row();
+                        QAbstractItemModel *m = ui->tableView_habitants_2->model();
+                        if (!m)
+                            return;
+
+                        int idDem = m->index(row, 0).data().toInt();
+                        if (idDem <= 0)
+                            return;
+
+                        QMenu menu(this);
+                        QAction *actDetails = menu.addAction(tr("🔍 Détails demande"));
+                        QAction *actAffecter = menu.addAction(tr("⇄ Affecter (personnel sélectionné)"));
+                        QAction *actAffecterReco = menu.addAction(tr("⭐ Affecter au personnel recommandé"));
+                        QAction *actVoirSuivi = menu.addAction(tr("📊 Voir dans le suivi"));
+
+                        QAction *chosen = menu.exec(ui->tableView_habitants_2->viewport()->mapToGlobal(pos));
+                        if (!chosen)
+                            return;
+
+                        if (chosen == actDetails) {
+                            // Simuler un clic sur le bouton détails
+                            QMetaObject::invokeMethod(this, [this]() {
+                                // Réutilise la logique du bouton
+                                QList<QPushButton*> btns = ui->page_15->findChildren<QPushButton*>(QString(), Qt::FindDirectChildrenOnly);
+                                for (QPushButton *b : btns) {
+                                    if (b->text().contains("Détails demande")) {
+                                        b->click();
+                                        break;
+                                    }
+                                }
+                            }, Qt::QueuedConnection);
+                        } else if (chosen == actAffecter) {
+                            on_Affecter_clicked();
+                        } else if (chosen == actAffecterReco) {
+                            // Choisir automatiquement le personnel recommandé puis affecter
+                            if (!ui->tableView_personel_2 || !ui->tableView_habitants_2)
+                                return;
+                            QAbstractItemModel *persModel = ui->tableView_personel_2->model();
+                            if (!persModel)
+                                return;
+
+                            // Reprendre l'algorithme de recommandation simple
+                            QString typeProb = m->index(row, 2).data().toString();
+                            QString typeLower = typeProb.toLower();
+                            int bestRow = -1;
+                            int bestScore = 0;
+                            for (int r = 0; r < persModel->rowCount(); ++r) {
+                                QString comp = persModel->index(r, 5).data().toString().toLower();
+                                QString dispo = persModel->index(r, 4).data().toString().toLower();
+                                int score = 0;
+                                if (dispo.contains("disponible")) score += 2;
+                                if (typeLower.contains("propret") || typeLower.contains("déchet") || typeLower.contains("dechet")) {
+                                    if (comp.contains("propret") || comp.contains("déchet") || comp.contains("dechet")) score += 3;
+                                }
+                                if (typeLower.contains("éclairage") || typeLower.contains("eclairage")) {
+                                    if (comp.contains("éclairage") || comp.contains("eclairage") || comp.contains("électric")) score += 3;
+                                }
+                                if (typeLower.contains("sécurité") || typeLower.contains("securite")) {
+                                    if (comp.contains("sécurité") || comp.contains("securite")) score += 3;
+                                }
+                                if (typeLower.contains("eau") || typeLower.contains("électricité") || typeLower.contains("electricite")) {
+                                    if (comp.contains("réseau") || comp.contains("reseau") || comp.contains("eau") || comp.contains("électric")) score += 3;
+                                }
+                                if (score > bestScore) { bestScore = score; bestRow = r; }
+                            }
+                            if (bestRow >= 0 && bestScore > 0) {
+                                ui->tableView_personel_2->selectRow(bestRow);
+                                on_Affecter_clicked();
+                            } else {
+                                QMessageBox::information(this, tr("Affectation"), tr("Aucun personnel recommandé trouvé pour ce type de problème."));
+                            }
+                        } else if (chosen == actVoirSuivi) {
+                            ouvrirDemandeDansSuivi(idDem);
+                        }
+                    });
+        }
+    }
+
+    // Boutons supplémentaires sur la page de suivi (page_16)
+    if (ui->page_16) {
+        // Filtre urgences / tout
+        QPushButton *btnSuiviAll = new QPushButton(tr("↺ Tout"), ui->page_16);
+        btnSuiviAll->setObjectName("btnSuiviTout");
+        btnSuiviAll->setGeometry(700, 40, 100, 29);
+        styliserBoutonPrincipal(btnSuiviAll);
+        connect(btnSuiviAll, &QPushButton::clicked, this, [this]() {
+            remplirTableSuivi();
+            filtrerUrgencesSuivi(false);
+        });
+
+        QPushButton *btnSuiviUrg = new QPushButton(tr("⚠ Urgences"), ui->page_16);
+        btnSuiviUrg->setObjectName("btnSuiviUrgences");
+        btnSuiviUrg->setGeometry(810, 40, 120, 29);
+        styliserBoutonPrincipal(btnSuiviUrg);
+        connect(btnSuiviUrg, &QPushButton::clicked, this, [this]() {
+            remplirTableSuivi();
+            filtrerUrgencesSuivi(true);
+        });
+
+        // Bouton Détails depuis le suivi
+        QPushButton *btnDetailsSuivi = new QPushButton(tr("🔍 Détails"), ui->page_16);
+        btnDetailsSuivi->setObjectName("pushButton_detailsSuivi");
+        btnDetailsSuivi->setGeometry(230, 540, 110, 29);
+        styliserBoutonPrincipal(btnDetailsSuivi);
+        connect(btnDetailsSuivi, &QPushButton::clicked, this, &MainWindow::on_pushButton_detailsSuivi_clicked);
+
+        // Bouton Export PDF du suivi
+        QPushButton *btnExportSuivi = new QPushButton(tr("💾 Export PDF"), ui->page_16);
+        btnExportSuivi->setObjectName("pushButton_exportSuivi");
+        btnExportSuivi->setGeometry(350, 540, 130, 29);
+        styliserBoutonPrincipal(btnExportSuivi);
+        connect(btnExportSuivi, &QPushButton::clicked, this, &MainWindow::on_pushButton_exportSuivi_clicked);
+
+        // Légende explicative des couleurs et indicateurs
+        QLabel *legend = new QLabel(ui->page_16);
+        legend->setGeometry(860, 540, 250, 90);
+        legend->setWordWrap(true);
+        legend->setStyleSheet(
+            "QLabel {"
+            "  background-color: #f7f9fc;"
+            "  border: 1px solid #d0d7e2;"
+            "  border-radius: 8px;"
+            "  padding: 6px 8px;"
+            "  font-size: 10px;"
+            "  color: #0a1a2f;"
+            "}");
+        legend->setText(tr(
+            "Légende :\n"
+            "- Rouge / jaune dans Analyse, Affectation, Résolution : délais proches ou dépassés.\n"
+            "- Statut rouge : demande nouvelle en retard.\n"
+            "- Statut orange : demande en cours.\n"
+            "- Statut vert : demande clôturée.\n"
+            "- Progression 25/50/75/100 % : étapes DC, DA, DR, DRU atteintes."));
+    }
 }
 
 // Bouton "affichersatisfaction": on réutilise le même rafraîchissement central
@@ -718,6 +1207,394 @@ void MainWindow::refreshDemandeTable()
     ui->tabdemande->resizeColumnsToContents();
 }
 
+void MainWindow::chargerTablesAffectation(bool urgences, bool onlyDisponibles)
+{
+    if (!ui)
+        return;
+
+    // Modèle personnalisé pour afficher aussi la charge de travail (nombre de demandes en cours)
+    QSqlQueryModel *modelPers = new QSqlQueryModel(this);
+    QString basePers =
+        "SELECT p.CIN, p.NOM, p.PRENOM, p.ZONE_AFFECTATION, p.DISPONIBILITE, p.COMPETENCES, "
+        "       (SELECT COUNT(*) FROM DEMANDE d WHERE d.ID_PERSONNEL_AFFECTE = p.CIN AND d.STATUT = 'En_cours') AS CHARGES "
+        "FROM PERSONNEL p";
+    if (onlyDisponibles)
+        basePers += " WHERE p.DISPONIBILITE = 'Disponible'";
+    basePers += " ORDER BY p.CIN";
+    modelPers->setQuery(basePers);
+    modelPers->setHeaderData(6, Qt::Horizontal, tr("Charges"));
+
+    ui->tableView_personel_2->setModel(modelPers);
+    ui->tableView_personel_2->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableView_personel_2->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableView_personel_2->resizeColumnsToContents();
+
+    QSqlQueryModel *modelDem = new QSqlQueryModel(this);
+    QString baseDem =
+        "SELECT ID_DEMANDE, ID_HABITANT, TYPE_PROBLEME, STATUT, "
+        "DATE_CREATION, ID_PERSONNEL_AFFECTE, DATE_AFFECTATION "
+        "FROM DEMANDE";
+    if (urgences) {
+        // Urgences: statuts en cours ou types critiques
+        baseDem += " WHERE STATUT = 'En_cours' OR LOWER(TYPE_PROBLEME) LIKE '%sécurité%' "
+                   "OR LOWER(TYPE_PROBLEME) LIKE '%securite%' "
+                   "OR LOWER(TYPE_PROBLEME) LIKE '%eau%' "
+                   "OR LOWER(TYPE_PROBLEME) LIKE '%électricité%' "
+                   "OR LOWER(TYPE_PROBLEME) LIKE '%electricite%' "
+                   "OR LOWER(TYPE_PROBLEME) LIKE '%éclairage%' "
+                   "OR LOWER(TYPE_PROBLEME) LIKE '%eclairage%'";
+    }
+    baseDem += " ORDER BY DATE_CREATION DESC";
+    modelDem->setQuery(baseDem);
+
+    ui->tableView_habitants_2->setModel(modelDem);
+    ui->tableView_habitants_2->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableView_habitants_2->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableView_habitants_2->resizeColumnsToContents();
+
+    // Mettre à jour le résumé dynamique et écouter les changements de sélection
+    if (ui->tableView_personel_2 && ui->tableView_personel_2->selectionModel()) {
+        connect(ui->tableView_personel_2->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, [this](const QItemSelection &, const QItemSelection &) { updateAffectationSummary(); });
+    }
+    if (ui->tableView_habitants_2 && ui->tableView_habitants_2->selectionModel()) {
+        connect(ui->tableView_habitants_2->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, [this](const QItemSelection &, const QItemSelection &) { updateAffectationSummary(); });
+    }
+
+    updateAffectationSummary();
+}
+
+void MainWindow::remplirTableSuivi()
+{
+    if (!ui || !ui->tableWidget_2)
+        return;
+
+    QTableWidget *tw = ui->tableWidget_2;
+    tw->clearContents();
+    tw->setRowCount(0);
+    tw->setColumnCount(8);
+    tw->setHorizontalHeaderLabels(
+        QStringList() << tr("ID")
+                      << tr("Type problème")
+                      << tr("Personnel")
+                      << tr("Statut")
+                      << tr("Analyse (j h m s)")
+                      << tr("Affectation (j h m s)")
+                      << tr("Résolution (j h m s)")
+                      << tr("Progression"));
+
+    QSqlQuery q;
+    q.prepare(
+        "SELECT d.ID_DEMANDE, d.DATE_CREATION, d.DATE_AFFECTATION, "
+        "       d.DATE_RESOLUTION_INTERNE, d.DATE_RESOLUTION_FINALE, "
+        "       d.TYPE_PROBLEME, d.STATUT, d.ID_PERSONNEL_AFFECTE, "
+        "       p.NOM, p.PRENOM "
+        "FROM DEMANDE d "
+        "LEFT JOIN PERSONNEL p ON p.CIN = d.ID_PERSONNEL_AFFECTE "
+        "ORDER BY d.ID_DEMANDE");
+    if (!q.exec()) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("Impossible de charger les demandes : %1")
+                                 .arg(q.lastError().text()));
+        return;
+    }
+
+    QDateTime now = QDateTime::currentDateTime();
+
+    auto daysBetween = [](const QDateTime &a, const QDateTime &b) -> QString {
+        if (!a.isValid() || !b.isValid())
+            return "-";
+        int d = a.daysTo(b);
+        if (d < 0)
+            d = 0;
+        return QString::number(d);
+    };
+
+    auto durationJHMS = [](const QDateTime &a, const QDateTime &b) -> QString {
+        if (!a.isValid() || !b.isValid())
+            return "-";
+        qint64 secs = a.secsTo(b);
+        if (secs < 0)
+            secs = 0;
+        qint64 days = secs / 86400; // 24*60*60
+        secs %= 86400;
+        qint64 hours = secs / 3600;
+        secs %= 3600;
+        qint64 minutes = secs / 60;
+        qint64 seconds = secs % 60;
+        return QString("%1j %2h %3m %4s").arg(days).arg(hours).arg(minutes).arg(seconds);
+    };
+
+    auto colorDuration = [](QTableWidgetItem *item, const QString &val, int seuilJour) {
+        if (!item)
+            return;
+        bool ok = false;
+        int v = val.toInt(&ok);
+        if (!ok)
+            return;
+        if (v > seuilJour * 2) {
+            item->setBackground(QColor("#ffcccc"));   // rouge clair
+        } else if (v > seuilJour) {
+            item->setBackground(QColor("#ffeeba"));   // jaune clair
+        }
+    };
+
+    auto formatDate = [](const QDateTime &dt) -> QString {
+        return dt.isValid() ? dt.toString("dd/MM/yyyy HH:mm") : QString("-");
+    };
+
+    // Statistiques globales pour le dashboard
+    int total = 0;
+    int nbNouveau = 0;
+    int nbEnCours = 0;
+    int nbCloture = 0;
+    int nbEchoue = 0;
+    int nbRetard = 0;
+
+    double sumAnalyse = 0.0; int countAnalyse = 0;
+    double sumAffect  = 0.0; int countAffect  = 0;
+    double sumResol   = 0.0; int countResol   = 0;
+
+    while (q.next()) {
+        int row = tw->rowCount();
+        tw->insertRow(row);
+
+        int idDem = q.value(0).toInt();
+        QDateTime dc = q.value(1).toDateTime();
+        QDateTime da = q.value(2).toDateTime();
+        QDateTime dr = q.value(3).toDateTime();
+        QDateTime dru = q.value(4).toDateTime();
+
+        QString typeProb = q.value(5).toString();
+        QString statut = q.value(6).toString();
+        QString idPers = q.value(7).toString().trimmed();
+        QString nomPers = q.value(8).toString().trimmed();
+        QString prenPers = q.value(9).toString().trimmed();
+
+        QString personnelAffiche;
+        if (!nomPers.isEmpty() || !prenPers.isEmpty())
+            personnelAffiche = nomPers + " " + prenPers;
+        else if (!idPers.isEmpty())
+            personnelAffiche = idPers;
+        else
+            personnelAffiche = tr("Non affecté");
+
+        // Phase courante (Analyse, Affectation, Résolution) en fonction des dates
+        QString phase;
+        if (!da.isValid() && !dr.isValid()) {
+            phase = tr("Analyse");
+        } else if (da.isValid() && !dr.isValid()) {
+            phase = tr("Affectation");
+        } else if (dr.isValid()) {
+            phase = tr("Résolution");
+        } else {
+            phase = statut;
+        }
+
+        // Analyse : de la création jusqu'à l'affectation (ou maintenant si pas encore affectée)
+        QDateTime finAnalyse = da.isValid() ? da : now;
+        QString analyseJours = daysBetween(dc, finAnalyse);           // utilisé pour stats / couleurs
+        QString analyseAffiche = durationJHMS(dc, finAnalyse);        // affichage j/h/m/s
+
+        // Affectation : de la date d'affectation jusqu'à la résolution interne (ou maintenant si pas encore résolue)
+        QString affectJours = "X";
+        QString affectAffiche = "X";
+        if (da.isValid()) {
+            QDateTime finAffect = dr.isValid() ? dr : now;
+            affectJours = daysBetween(da, finAffect);
+            affectAffiche = durationJHMS(da, finAffect);
+        }
+
+        // Résolution : de la résolution interne jusqu'à la résolution finale (ou maintenant si en cours)
+        QString resolJours = "X";
+        QString resolAffiche = "X";
+        if (dr.isValid()) {
+            QDateTime finResol = dru.isValid() ? dru : now;
+            resolJours = daysBetween(dr, finResol);
+            resolAffiche = durationJHMS(dr, finResol);
+        }
+
+        // Items de base
+        QTableWidgetItem *idItem = new QTableWidgetItem(QString::number(idDem));
+        idItem->setTextAlignment(Qt::AlignCenter);
+        QTableWidgetItem *typeItem = new QTableWidgetItem(typeProb);
+        QTableWidgetItem *persItem = new QTableWidgetItem(personnelAffiche);
+        QTableWidgetItem *statutItem = new QTableWidgetItem(phase);
+        QTableWidgetItem *analyseItem = new QTableWidgetItem(analyseAffiche);
+        QTableWidgetItem *affectItem = new QTableWidgetItem(affectAffiche);
+        QTableWidgetItem *resolItem  = new QTableWidgetItem(resolAffiche);
+
+        tw->setItem(row, 0, idItem);
+        tw->setItem(row, 1, typeItem);
+        tw->setItem(row, 2, persItem);
+        tw->setItem(row, 3, statutItem);
+        tw->setItem(row, 4, analyseItem);
+        tw->setItem(row, 5, affectItem);
+        tw->setItem(row, 6, resolItem);
+
+        // Compteurs globaux
+        ++total;
+        QString s = statut.trimmed().toLower();
+        if (s == "nouveau") ++nbNouveau;
+        else if (s == "en_cours" || s.contains("cours")) ++nbEnCours;
+        else if (s == "cloture" || s.contains("clôt") || s.contains("clos")) ++nbCloture;
+        else if (s.contains("echou")) ++nbEchoue;
+
+        // Couleurs selon statut
+        QColor bg("#ecf0f1");
+        if (s == "nouveau") {
+            bg = QColor("#e74c3c");
+        } else if (s == "en_cours" || s.contains("cours")) {
+            bg = QColor("#f39c12");
+        } else if (s == "cloture" || s.contains("clôt") || s.contains("clos")) {
+            bg = QColor("#27ae60");
+        }
+        statutItem->setBackground(bg);
+        statutItem->setForeground(QColor("#ffffff"));
+
+        // Mise en évidence des durées longues et stats de durée
+        bool retard = false;
+        if (analyseJours != "-" && analyseJours != "X") {
+            bool okDur = false; int v = analyseJours.toInt(&okDur);
+            if (okDur) { sumAnalyse += v; ++countAnalyse; if (v > 2) retard = true; }
+        }
+        if (affectJours != "-" && affectJours != "X") {
+            bool okDur = false; int v = affectJours.toInt(&okDur);
+            if (okDur) { sumAffect += v; ++countAffect; if (v > 2) retard = true; }
+        }
+        if (resolJours != "-" && resolJours != "X") {
+            bool okDur = false; int v = resolJours.toInt(&okDur);
+            if (okDur) { sumResol += v; ++countResol; if (v > 5) retard = true; }
+        }
+        if (retard) ++nbRetard;
+
+        colorDuration(analyseItem, analyseJours, 2);   // seuil 2 jours analyse
+        colorDuration(affectItem, affectJours, 2);     // seuil 2 jours affectation
+        colorDuration(resolItem,  resolJours, 5);      // seuil 5 jours résolution
+
+        // Barre de progression en fonction des étapes atteintes
+        int steps = 0;
+        if (dc.isValid()) steps = 1;
+        if (da.isValid()) steps = 2;
+        if (dr.isValid()) steps = 3;
+        if (dru.isValid()) steps = 4;
+        int progress = steps * 25; // 25%, 50%, 75%, 100%
+
+        QProgressBar *bar = new QProgressBar(tw);
+        bar->setRange(0, 100);
+        bar->setValue(progress);
+        bar->setTextVisible(true);
+        bar->setFormat(QString::number(progress) + "%");
+        bar->setStyleSheet(
+            "QProgressBar {"
+            "  border: 1px solid #d0d7e2;"
+            "  border-radius: 6px;"
+            "  background: #f5f7fb;"
+            "  text-align: center;"
+            "  font-size: 11px;"
+            "}"
+            "QProgressBar::chunk {"
+            "  background-color: #27ae60;"
+            "  border-radius: 6px;"
+            "}"
+        );
+        tw->setCellWidget(row, 7, bar);
+
+        // Tooltip récapitulatif sur la ligne
+        QString tooltip = tr("Création : %1\nAffectation : %2\nRésolution interne : %3\nRésolution finale : %4")
+                              .arg(formatDate(dc))
+                              .arg(formatDate(da))
+                              .arg(formatDate(dr))
+                              .arg(formatDate(dru));
+
+        idItem->setToolTip(tooltip);
+        typeItem->setToolTip(tooltip);
+        persItem->setToolTip(tooltip);
+        statutItem->setToolTip(tooltip);
+        analyseItem->setToolTip(tooltip);
+        affectItem->setToolTip(tooltip);
+        resolItem->setToolTip(tooltip);
+        bar->setToolTip(tooltip);
+    }
+
+    tw->resizeColumnsToContents();
+
+    // Mettre à jour le dashboard global dans tabdemande_2
+    if (!ui->tabdemande_2)
+        return;
+
+    QStandardItemModel *dash = new QStandardItemModel(this);
+    dash->setColumnCount(3);
+    dash->setHeaderData(0, Qt::Horizontal, tr("Indicateur"));
+    dash->setHeaderData(1, Qt::Horizontal, tr("Valeur"));
+    dash->setHeaderData(2, Qt::Horizontal, tr("Commentaire"));
+
+    auto addRow = [dash](int row, const QString &ind, const QString &val, const QString &com) {
+        dash->setItem(row, 0, new QStandardItem(ind));
+        dash->setItem(row, 1, new QStandardItem(val));
+        dash->setItem(row, 2, new QStandardItem(com));
+    };
+
+    int rowDash = 0;
+    addRow(rowDash++, tr("Total demandes"), QString::number(total),
+           tr("Nouvelles: %1, En cours: %2, Clôturées: %3, Échouées: %4")
+               .arg(nbNouveau).arg(nbEnCours).arg(nbCloture).arg(nbEchoue));
+
+    addRow(rowDash++, tr("Demandes en retard"), QString::number(nbRetard),
+           tr("Au moins une phase dépasse son délai cible"));
+
+    auto avgOrDash = [](double sum, int count) {
+        if (count <= 0) return QString("-");
+        double v = sum / double(count);
+        return QString::number(v, 'f', 1);
+    };
+
+    addRow(rowDash++, tr("Analyse moyenne (j)"), avgOrDash(sumAnalyse, countAnalyse),
+           tr("Basée sur %1 demandes analysées").arg(countAnalyse));
+    addRow(rowDash++, tr("Affectation moyenne (j)"), avgOrDash(sumAffect, countAffect),
+           tr("Basée sur %1 demandes affectées").arg(countAffect));
+    addRow(rowDash++, tr("Résolution moyenne (j)"), avgOrDash(sumResol, countResol),
+           tr("Basée sur %1 demandes résolues").arg(countResol));
+
+    ui->tabdemande_2->setModel(dash);
+    ui->tabdemande_2->resizeColumnsToContents();
+}
+
+void MainWindow::filtrerUrgencesSuivi(bool urgencesSeulement)
+{
+    if (!ui || !ui->tableWidget_2)
+        return;
+
+    QTableWidget *tw = ui->tableWidget_2;
+    int rows = tw->rowCount();
+    for (int r = 0; r < rows; ++r) {
+        bool urgent = false;
+
+        // Colonnes 4,5,6 : Analyse, Affectation, Résolution (jours)
+        for (int c = 4; c <= 6; ++c) {
+            QTableWidgetItem *it = tw->item(r, c);
+            if (!it)
+                continue;
+            bool ok = false;
+            int v = it->text().toInt(&ok);
+            if (!ok)
+                continue;
+
+            if (c == 4 || c == 5) {
+                if (v > 2) { urgent = true; break; }
+            } else if (c == 6) {
+                if (v > 5) { urgent = true; break; }
+            }
+        }
+
+        if (urgencesSeulement)
+            tw->setRowHidden(r, !urgent);
+        else
+            tw->setRowHidden(r, false);
+    }
+}
+
 void MainWindow::chargerStatutsAutorises()
 {
     allowedStatuses.clear();
@@ -970,6 +1847,345 @@ void MainWindow::on_statdemande_clicked()
     dlg->exec();
 }
 
+void MainWindow::on_Affecter_clicked()
+{
+    if (!ui || !ui->tableView_personel_2 || !ui->tableView_habitants_2)
+        return;
+
+    QItemSelectionModel *selDem = ui->tableView_habitants_2->selectionModel();
+    if (!selDem || !selDem->hasSelection()) {
+        QMessageBox::warning(this, tr("Affectation"),
+                             tr("Veuillez sélectionner une demande."));
+        return;
+    }
+    int rowDem = selDem->selectedRows().first().row();
+    QAbstractItemModel *modelDem = ui->tableView_habitants_2->model();
+    if (!modelDem) {
+        QMessageBox::warning(this, tr("Affectation"),
+                             tr("Aucun modèle de données pour les demandes."));
+        return;
+    }
+
+    bool okIdDem = false;
+    int idDemande = modelDem->index(rowDem, 0).data().toInt(&okIdDem);
+    if (!okIdDem || idDemande <= 0) {
+        QMessageBox::warning(this, tr("Affectation"),
+                             tr("ID de demande invalide."));
+        return;
+    }
+
+    QItemSelectionModel *selPers = ui->tableView_personel_2->selectionModel();
+    if (!selPers || !selPers->hasSelection()) {
+        QMessageBox::warning(this, tr("Affectation"),
+                             tr("Veuillez sélectionner un personnel."));
+        return;
+    }
+    int rowPers = selPers->selectedRows().first().row();
+    QAbstractItemModel *modelPers = ui->tableView_personel_2->model();
+    if (!modelPers) {
+        QMessageBox::warning(this, tr("Affectation"),
+                             tr("Aucun modèle de données pour les personnels."));
+        return;
+    }
+
+    QString idPersonnel = modelPers->index(rowPers, 0).data().toString().trimmed();
+    if (idPersonnel.isEmpty()) {
+        QMessageBox::warning(this, tr("Affectation"),
+                             tr("ID du personnel invalide."));
+        return;
+    }
+
+    QString error;
+    if (!AffectationP::affecterDemande(idDemande, idPersonnel, error)) {
+        QMessageBox::critical(this, tr("Affectation"),
+                              tr("Échec de l'affectation : %1")
+                                  .arg(error));
+        return;
+    }
+
+    QMessageBox::information(this, tr("Affectation"),
+                             tr("Demande %1 affectée à %2.")
+                                 .arg(idDemande)
+                                 .arg(idPersonnel));
+
+    chargerTablesAffectation();
+    refreshDemandeTable();
+}
+
+void MainWindow::on_Refresh_clicked()
+{
+    remplirTableSuivi();
+}
+
+void MainWindow::on_Resolution_clicked()
+{
+    if (!ui || !ui->tableWidget_2)
+        return;
+
+    QTableWidget *tw = ui->tableWidget_2;
+    QItemSelectionModel *sel = tw->selectionModel();
+    if (!sel || !sel->hasSelection()) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("Veuillez sélectionner une ligne."));
+        return;
+    }
+
+    int row = sel->selectedRows().first().row();
+    QTableWidgetItem *idItem = tw->item(row, 0);
+    if (!idItem) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("Impossible de lire l'ID de la demande."));
+        return;
+    }
+
+    bool ok = false;
+    int idDem = idItem->text().toInt(&ok);
+    if (!ok || idDem <= 0) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("ID de demande invalide."));
+        return;
+    }
+
+    QString error;
+    if (!AffectationP::fixerResolutionInterne(idDem, error)) {
+        QMessageBox::critical(this, tr("Suivi"),
+                              tr("Échec de la mise à jour : %1")
+                                  .arg(error));
+        return;
+    }
+
+    remplirTableSuivi();
+    refreshDemandeTable();
+}
+
+void MainWindow::on_pushButton_detailsSuivi_clicked()
+{
+    if (!ui || !ui->tableWidget_2)
+        return;
+
+    QTableWidget *tw = ui->tableWidget_2;
+    QItemSelectionModel *sel = tw->selectionModel();
+    if (!sel || !sel->hasSelection()) {
+        QMessageBox::information(this, tr("Détails demande"),
+                                 tr("Veuillez sélectionner une demande dans le tableau de suivi."));
+        return;
+    }
+
+    int row = sel->selectedRows().first().row();
+    QTableWidgetItem *idItem = tw->item(row, 0);
+    if (!idItem) {
+        QMessageBox::warning(this, tr("Détails demande"),
+                             tr("Impossible de lire l'ID de la demande."));
+        return;
+    }
+
+    bool ok = false;
+    int idDemande = idItem->text().toInt(&ok);
+    if (!ok || idDemande <= 0) {
+        QMessageBox::warning(this, tr("Détails demande"),
+                             tr("ID de demande invalide."));
+        return;
+    }
+
+    auto fmtDate = [](const QDateTime &dt) {
+        return dt.isValid() ? dt.toString("dd/MM/yyyy HH:mm") : QString("-");
+    };
+
+    QSqlQuery q;
+    q.prepare("SELECT ID_DEMANDE, ID_HABITANT, TYPE_PROBLEME, DESCRIPTION, STATUT, "
+              "DATE_CREATION, DATE_AFFECTATION, DATE_RESOLUTION_INTERNE, DATE_RESOLUTION_FINALE "
+              "FROM DEMANDE WHERE ID_DEMANDE = :id");
+    q.bindValue(":id", idDemande);
+    if (!q.exec()) {
+        QMessageBox::warning(this, tr("Détails demande"),
+                             tr("Erreur SQL : %1").arg(q.lastError().text()));
+        return;
+    }
+    if (!q.next()) {
+        QMessageBox::information(this, tr("Détails demande"),
+                                 tr("Aucune demande trouvée pour l'ID %1.").arg(idDemande));
+        return;
+    }
+
+    int idDem    = q.value(0).toInt();
+    int idHab    = q.value(1).toInt();
+    QString type = q.value(2).toString();
+    QString desc = q.value(3).toString();
+    QString statut = q.value(4).toString();
+    QDateTime dc  = q.value(5).toDateTime();
+    QDateTime da  = q.value(6).toDateTime();
+    QDateTime dr  = q.value(7).toDateTime();
+    QDateTime dru = q.value(8).toDateTime();
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Détails demande"));
+    dlg.setModal(true);
+    dlg.resize(500, 340);
+
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QTableWidget *twInfo = new QTableWidget(&dlg);
+    twInfo->setColumnCount(2);
+    twInfo->setRowCount(8);
+    twInfo->setHorizontalHeaderLabels(QStringList() << tr("Champ") << tr("Valeur"));
+    twInfo->verticalHeader()->setVisible(false);
+    twInfo->horizontalHeader()->setStretchLastSection(true);
+    twInfo->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    twInfo->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    twInfo->setSelectionMode(QAbstractItemView::NoSelection);
+    twInfo->setAlternatingRowColors(true);
+
+    // Palette et style pour une meilleure visibilité
+    QPalette palTable = twInfo->palette();
+    palTable.setColor(QPalette::Base, Qt::white);
+    palTable.setColor(QPalette::AlternateBase, QColor("#f7f9fc"));
+    palTable.setColor(QPalette::Text, QColor("#0a1a2f"));
+    palTable.setColor(QPalette::WindowText, QColor("#0a1a2f"));
+    twInfo->setPalette(palTable);
+    twInfo->setStyleSheet(
+        "QTableWidget { border: 1px solid #d0d7e2; gridline-color:#e1e5ee; }"
+        "QHeaderView::section { background-color:#0d3273; color:white; font-weight:600; padding:4px 8px; border:none; }"
+        "QTableWidget::item { padding:3px 6px; }");
+
+    auto setRow = [twInfo](int row, const QString &champ, const QString &val) {
+        QTableWidgetItem *c = new QTableWidgetItem(champ);
+        QFont f = c->font();
+        f.setBold(true);
+        c->setFont(f);
+        twInfo->setItem(row, 0, c);
+
+        QTableWidgetItem *v = new QTableWidgetItem(val);
+        twInfo->setItem(row, 1, v);
+    };
+
+    setRow(0, tr("ID demande"), QString::number(idDem));
+    setRow(1, tr("ID habitant"), QString::number(idHab));
+    setRow(2, tr("Type"), type);
+    setRow(3, tr("Statut"), statut);
+    setRow(4, tr("Création"), fmtDate(dc));
+    setRow(5, tr("Affectation"), fmtDate(da));
+    setRow(6, tr("Résolution interne"), fmtDate(dr));
+    setRow(7, tr("Résolution finale"), fmtDate(dru));
+
+    twInfo->resizeColumnsToContents();
+    layout->addWidget(twInfo);
+
+    QLabel *lblDesc = new QLabel(tr("Description :"), &dlg);
+    lblDesc->setStyleSheet("color: #0a1a2f; font-weight: 600;");
+    layout->addWidget(lblDesc);
+
+    QTextEdit *editDesc = new QTextEdit(&dlg);
+    editDesc->setReadOnly(true);
+    editDesc->setText(desc);
+    editDesc->setStyleSheet("color: black; background-color: white;");
+    editDesc->setMinimumHeight(80);
+    layout->addWidget(editDesc);
+
+    QPushButton *btnClose = new QPushButton(tr("Fermer"), &dlg);
+    btnClose->setCursor(Qt::PointingHandCursor);
+    QObject::connect(btnClose, &QPushButton::clicked, &dlg, &QDialog::accept);
+    QHBoxLayout *bottomLayout = new QHBoxLayout();
+    bottomLayout->addStretch();
+    bottomLayout->addWidget(btnClose);
+    layout->addLayout(bottomLayout);
+
+    dlg.exec();
+}
+
+void MainWindow::on_pushButton_exportSuivi_clicked()
+{
+    if (!ui || !ui->tableWidget_2)
+        return;
+
+    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QString fileName = QFileDialog::getSaveFileName(
+        this, tr("Exporter le suivi en PDF"),
+        defaultPath + "/suivi_demandes.pdf",
+        tr("PDF (*.pdf)"));
+
+    if (fileName.isEmpty())
+        return;
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(fileName);
+    printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageOrientation(QPageLayout::Landscape);
+
+    QPainter painter;
+    if (!painter.begin(&printer)) {
+        QMessageBox::warning(this, tr("Export PDF"), tr("Impossible de créer le fichier PDF."));
+        return;
+    }
+
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    QRect rect = painter.viewport();
+    int margin = 40;
+    QRect drawRect(rect.left() + margin, rect.top() + margin,
+                   rect.width() - 2 * margin, rect.height() - 2 * margin);
+
+    QSize tableSize = ui->tableWidget_2->size();
+    if (tableSize.width() <= 0 || tableSize.height() <= 0)
+        tableSize = QSize(800, 400);
+
+    double xScale = double(drawRect.width()) / tableSize.width();
+    double yScale = double(drawRect.height()) / tableSize.height();
+    double scale = qMin(xScale, yScale);
+
+    painter.save();
+    painter.translate(drawRect.topLeft());
+    painter.scale(scale, scale);
+    ui->tableWidget_2->render(&painter);
+    painter.restore();
+
+    painter.end();
+
+    QMessageBox::information(this, tr("Export PDF"),
+                             tr("Le suivi a été exporté dans :\n%1").arg(fileName));
+}
+
+void MainWindow::on_Resolu_clicked()
+{
+    if (!ui || !ui->tableWidget_2)
+        return;
+
+    QTableWidget *tw = ui->tableWidget_2;
+    QItemSelectionModel *sel = tw->selectionModel();
+    if (!sel || !sel->hasSelection()) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("Veuillez sélectionner une ligne."));
+        return;
+    }
+
+    int row = sel->selectedRows().first().row();
+    QTableWidgetItem *idItem = tw->item(row, 0);
+    if (!idItem) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("Impossible de lire l'ID de la demande."));
+        return;
+    }
+
+    bool ok = false;
+    int idDem = idItem->text().toInt(&ok);
+    if (!ok || idDem <= 0) {
+        QMessageBox::warning(this, tr("Suivi"),
+                             tr("ID de demande invalide."));
+        return;
+    }
+
+    QString error;
+    if (!AffectationP::fixerResolutionFinale(idDem, error)) {
+        QMessageBox::critical(this, tr("Suivi"),
+                              tr("Échec de la mise à jour : %1")
+                                  .arg(error));
+        return;
+    }
+
+    remplirTableSuivi();
+    refreshDemandeTable();
+}
+
 void MainWindow::styliserChampsSaisie()
 {
     const QString lineEditCss =
@@ -1001,6 +2217,251 @@ void MainWindow::styliserChampsSaisie()
         pal.setColor(QPalette::PlaceholderText, QColor("#6c757d"));
         e->setPalette(pal);
     }
+}
+
+void MainWindow::styliserTableView(QTableView *view)
+{
+    if (!view)
+        return;
+
+    view->setAlternatingRowColors(true);
+    view->setSelectionBehavior(QAbstractItemView::SelectRows);
+    view->setSelectionMode(QAbstractItemView::SingleSelection);
+    view->setShowGrid(false);
+    view->verticalHeader()->setVisible(false);
+    if (view->horizontalHeader()) {
+        view->horizontalHeader()->setStretchLastSection(true);
+        view->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        view->horizontalHeader()->setStyleSheet(
+            "QHeaderView::section {"
+            "  background-color: #0d3273;"
+            "  color: white;"
+            "  font-weight: 600;"
+            "  padding: 6px 8px;"
+            "  border: none;"
+            "  border-right: 1px solid #214a8a;"
+            "}"
+        );
+    }
+
+    view->setStyleSheet(
+        "QTableView {"
+        "  background-color: #ffffff;"
+        "  border: 1px solid #d0d7e2;"
+        "  gridline-color: #e1e5ee;"
+        "  selection-background-color: #c7e0ff;"
+        "  selection-color: #0a1a2f;"
+        "}"
+        "QTableView::item {"
+        "  padding: 4px 6px;"
+        "}"
+        "QTableView::item:selected {"
+        "  background-color: #c7e0ff;"
+        "  color: #0a1a2f;"
+        "}"
+    );
+}
+
+void MainWindow::styliserBoutonPrincipal(QPushButton *button)
+{
+    if (!button)
+        return;
+
+    button->setCursor(Qt::PointingHandCursor);
+    button->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #012a59;"
+        "  color: #ffffff;"
+        "  border-radius: 10px;"
+        "  padding: 8px 18px;"
+        "  font-size: 13px;"
+        "  font-weight: 500;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #024b8a;"
+        "}"
+        "QPushButton:pressed {"
+        "  background-color: #013869;"
+        "}"
+    );
+}
+
+void MainWindow::styliserModulePersonnels()
+{
+    // Tables du module personnels
+    styliserTableView(ui->tableView_personel);
+    styliserTableView(ui->tableView_personel_2);
+    styliserTableView(ui->tableView_habitants_2);
+
+    if (ui->tableWidget_2)
+        styliserTableView(ui->tableWidget_2);
+    if (ui->tabdemande_2)
+        styliserTableView(ui->tabdemande_2);
+
+    // Boutons d'action (affectation et suivi)
+    if (ui->Affecter) {
+        ui->Affecter->setText(tr("⇄ Affecter"));
+        styliserBoutonPrincipal(ui->Affecter);
+    }
+    if (ui->Refresh) {
+        ui->Refresh->setText(tr("🔄 Refresh"));
+        styliserBoutonPrincipal(ui->Refresh);
+    }
+    if (ui->Resolution) {
+        ui->Resolution->setText(tr("⚙ Résolution"));
+        styliserBoutonPrincipal(ui->Resolution);
+    }
+    if (ui->Resolu) {
+        ui->Resolu->setText(tr("✔ Résolu"));
+        styliserBoutonPrincipal(ui->Resolu);
+    }
+}
+
+void MainWindow::ouvrirDemandeDansSuivi(int idDemande)
+{
+    if (!ui || !ui->stackedWidget_6 || !ui->tableWidget_2)
+        return;
+
+    ui->stackedWidget_6->setCurrentIndex(2);
+    remplirTableSuivi();
+
+    QTableWidget *tw = ui->tableWidget_2;
+    int foundRow = -1;
+    for (int r = 0; r < tw->rowCount(); ++r) {
+        QTableWidgetItem *it = tw->item(r, 0);
+        if (it && it->text().toInt() == idDemande) {
+            foundRow = r;
+            break;
+        }
+    }
+
+    if (foundRow >= 0) {
+        tw->selectRow(foundRow);
+        tw->scrollToItem(tw->item(foundRow, 0), QAbstractItemView::PositionAtCenter);
+    }
+}
+
+void MainWindow::updateAffectationSummary()
+{
+    if (!ui || !affectationSummaryLabel)
+        return;
+
+    QString demandeText;
+    QString personnelText;
+    QString recoText;
+
+    // --- Demande sélectionnée ---
+    int demRow = -1;
+    if (ui->tableView_habitants_2 && ui->tableView_habitants_2->selectionModel() &&
+        ui->tableView_habitants_2->selectionModel()->hasSelection()) {
+        demRow = ui->tableView_habitants_2->selectionModel()->selectedRows().first().row();
+    }
+    QAbstractItemModel *demModel = ui->tableView_habitants_2 ? ui->tableView_habitants_2->model() : nullptr;
+    QString typeProb;
+
+    if (demModel && demRow >= 0) {
+        int idDem = demModel->index(demRow, 0).data().toInt();
+        int idHab = demModel->index(demRow, 1).data().toInt();
+        typeProb  = demModel->index(demRow, 2).data().toString();
+        QString statut = demModel->index(demRow, 3).data().toString();
+        demandeText = tr("#%1 – %2 – %3 (habitant %4)")
+                          .arg(idDem)
+                          .arg(typeProb)
+                          .arg(statut)
+                          .arg(idHab);
+    }
+
+    // --- Personnel sélectionné ---
+    int persRow = -1;
+    if (ui->tableView_personel_2 && ui->tableView_personel_2->selectionModel() &&
+        ui->tableView_personel_2->selectionModel()->hasSelection()) {
+        persRow = ui->tableView_personel_2->selectionModel()->selectedRows().first().row();
+    }
+    QAbstractItemModel *persModel = ui->tableView_personel_2 ? ui->tableView_personel_2->model() : nullptr;
+
+    if (persModel && persRow >= 0) {
+        QString cin   = persModel->index(persRow, 0).data().toString();
+        QString nom   = persModel->index(persRow, 1).data().toString();
+        QString pren  = persModel->index(persRow, 2).data().toString();
+        QString zone  = persModel->index(persRow, 3).data().toString();
+        QString dispo = persModel->index(persRow, 4).data().toString();
+        personnelText = tr("%1 %2 (CIN %3, Zone %4, %5)")
+                            .arg(nom)
+                            .arg(pren)
+                            .arg(cin)
+                            .arg(zone)
+                            .arg(dispo);
+    }
+
+    // --- Recommandation simple de personnel selon le type de problème ---
+    if (persModel && !typeProb.trimmed().isEmpty()) {
+        QString typeLower = typeProb.toLower();
+        int bestRow = -1;
+        int bestScore = 0;
+
+        for (int r = 0; r < persModel->rowCount(); ++r) {
+            QString comp = persModel->index(r, 5).data().toString().toLower();
+            QString dispo = persModel->index(r, 4).data().toString().toLower();
+
+            int score = 0;
+            // Bonus si disponible
+            if (dispo.contains("disponible"))
+                score += 2;
+
+            // Mots-clés simples selon le type de problème
+            if (typeLower.contains("propret") || typeLower.contains("déchet") || typeLower.contains("dechet")) {
+                if (comp.contains("propret") || comp.contains("déchet") || comp.contains("dechet"))
+                    score += 3;
+            }
+            if (typeLower.contains("éclairage") || typeLower.contains("eclairage")) {
+                if (comp.contains("éclairage") || comp.contains("eclairage") || comp.contains("électric"))
+                    score += 3;
+            }
+            if (typeLower.contains("sécurité") || typeLower.contains("securite")) {
+                if (comp.contains("sécurité") || comp.contains("securite"))
+                    score += 3;
+            }
+            if (typeLower.contains("eau") || typeLower.contains("électricité") || typeLower.contains("electricite")) {
+                if (comp.contains("réseau") || comp.contains("reseau") || comp.contains("eau") || comp.contains("électric"))
+                    score += 3;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestRow = r;
+            }
+        }
+
+        if (bestRow >= 0 && bestScore > 0) {
+            QString cin   = persModel->index(bestRow, 0).data().toString();
+            QString nom   = persModel->index(bestRow, 1).data().toString();
+            QString pren  = persModel->index(bestRow, 2).data().toString();
+            QString comp  = persModel->index(bestRow, 5).data().toString();
+            recoText = tr("Recommandé : %1 %2 (CIN %3, compétences : %4)")
+                           .arg(nom)
+                           .arg(pren)
+                           .arg(cin)
+                           .arg(comp);
+        }
+    }
+
+    QString summary;
+    if (!demandeText.isEmpty())
+        summary += tr("Demande sélectionnée : %1").arg(demandeText);
+    else
+        summary += tr("Aucune demande sélectionnée.");
+
+    summary += "\n";
+    if (!personnelText.isEmpty())
+        summary += tr("Personnel sélectionné : %1").arg(personnelText);
+    else
+        summary += tr("Aucun personnel sélectionné.");
+
+    if (!recoText.isEmpty()) {
+        summary += "\n" + recoText;
+    }
+
+    affectationSummaryLabel->setText(summary);
 }
 
 void MainWindow::saveLastHabitantId(int id)
@@ -1161,7 +2622,10 @@ void MainWindow::on_on_pushButton_3_clicked() { ui->stackedWidget_2->setCurrentI
 
 void MainWindow::on_Ghabitant_clicked() { ui->stackedWidget->setCurrentIndex(0); }
 void MainWindow::on_Ghabitats_2_clicked() { ui->stackedWidget->setCurrentIndex(1); }
-void MainWindow::on_Gpersonnels_2_clicked() { ui->stackedWidget->setCurrentIndex(2); }
+void MainWindow::on_Gpersonnels_2_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(2);
+}
 void MainWindow::on_Gequipements_2_clicked() { ui->stackedWidget->setCurrentIndex(4); }
 void MainWindow::on_Gvehicules_2_clicked() { ui->stackedWidget->setCurrentIndex(5); }
 void MainWindow::on_Gespace_clicked() { ui->stackedWidget->setCurrentIndex(3); }
@@ -1170,9 +2634,22 @@ void MainWindow::on_on_pushButton_4_clicked() { ui->stackedWidget_5->setCurrentI
 void MainWindow::on_on_pushButton_5_clicked() { ui->stackedWidget_5->setCurrentIndex(2); }
 void MainWindow::on_on_pushButton_6_clicked() { ui->stackedWidget_5->setCurrentIndex(0); }
 
-void MainWindow::on_on_pushButton_7_clicked() { ui->stackedWidget_6->setCurrentIndex(0); }
-void MainWindow::on_on_pushButton_8_clicked() { ui->stackedWidget_6->setCurrentIndex(1); }
-void MainWindow::on_on_pushButton_9_clicked() { ui->stackedWidget_6->setCurrentIndex(2); }
+void MainWindow::on_on_pushButton_7_clicked()
+{
+    ui->stackedWidget_6->setCurrentIndex(0);
+}
+
+void MainWindow::on_on_pushButton_8_clicked()
+{
+    ui->stackedWidget_6->setCurrentIndex(1);
+    chargerTablesAffectation();
+}
+
+void MainWindow::on_on_pushButton_9_clicked()
+{
+    ui->stackedWidget_6->setCurrentIndex(2);
+    remplirTableSuivi();
+}
 
 void MainWindow::on_on_pushButton_13_clicked() { ui->stackedWidget_2->setCurrentIndex(0); }
 void MainWindow::on_on_pushButton_14_clicked() { ui->stackedWidget_2->setCurrentIndex(2); }
@@ -2338,17 +3815,54 @@ void MainWindow::afficherPersonnel(QTableView *tableView, QSqlQueryModel *model)
     tableView->setSortingEnabled(true);
 }
 
+int MainWindow::suggestNextPersonnelId() const
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.isOpen())
+        return 1;
+
+    int nextId = 1;
+    bool found = false;
+
+    auto tryMax = [&](const QString &table) {
+        QSqlQuery q;
+        q.prepare(QString("SELECT MAX(CIN) FROM %1").arg(table));
+        if (!q.exec())
+            return false;
+        if (!q.next())
+            return true;
+        QVariant v = q.value(0);
+        if (!v.isNull()) {
+            bool ok = false;
+            int maxId = v.toInt(&ok);
+            if (ok && maxId >= 0) {
+                nextId = maxId + 1;
+                found = true;
+            }
+        }
+        return true;
+    };
+
+    if (!tryMax("PERSONNEL")) {
+        tryMax("PERSONNELS");
+    } else if (!found) {
+        tryMax("PERSONNELS");
+    }
+
+    return nextId;
+}
+
 // Ajouter
 void MainWindow::on_ajouterperso_clicked()
 {
-    QString id = ui->ID->text().trimmed();
+    QString id = QString::number(suggestNextPersonnelId());
     QString nom = ui->Nom->text().trimmed();
     QString prenom = ui->prenom->text().trimmed();
-    QString comp = ui->competence->text().trimmed();
+    QString comp = ui->competence->currentText().trimmed();
     QString zone = ui->Zone->text().trimmed();
 
-    // Validation des champs
-    if (id.isEmpty() || nom.isEmpty() || prenom.isEmpty() || comp.isEmpty() || zone.isEmpty()) {
+    // Validation des champs (l'ID est généré automatiquement)
+    if (nom.isEmpty() || prenom.isEmpty() || comp.isEmpty() || zone.isEmpty()) {
         QMessageBox::warning(this, "⚠️ Champ vide", "Tous les champs doivent être remplis !");
         return;
     }
@@ -2366,10 +3880,9 @@ void MainWindow::on_ajouterperso_clicked()
         afficherPersonnel(ui->tableView_personel, p.afficher());
         QMessageBox::information(this, "✅ Succès", "Personnel ajouté avec succès !");
         // Vider les champs après ajout réussi
-        ui->ID->clear();
         ui->Nom->clear();
         ui->prenom->clear();
-        ui->competence->clear();
+        ui->competence->setCurrentIndex(0);
         ui->Zone->clear();
     } else {
         // Récupérer l'erreur SQL réelle
@@ -2407,11 +3920,18 @@ void MainWindow::on_ajouterperso_clicked()
 // Supprimer
 void MainWindow::on_Supprimerperso_clicked()
 {
-    QString id = ui->ID->text().trimmed();
+    QString id;
+    if (ui->tableView_personel && ui->tableView_personel->selectionModel() &&
+        ui->tableView_personel->selectionModel()->hasSelection()) {
+        int row = ui->tableView_personel->selectionModel()->selectedRows().first().row();
+        QAbstractItemModel *model = ui->tableView_personel->model();
+        if (model)
+            id = model->index(row, 0).data().toString().trimmed();
+    }
 
-    // Validation de l'ID
+    // Validation de la sélection
     if (id.isEmpty()) {
-        QMessageBox::warning(this, "⚠️ Champ vide", "Veuillez entrer l'ID du personnel à supprimer !");
+        QMessageBox::warning(this, "⚠️ Sélection requise", "Veuillez sélectionner un personnel dans le tableau à supprimer !");
         return;
     }
 
@@ -2426,10 +3946,9 @@ void MainWindow::on_Supprimerperso_clicked()
             afficherPersonnel(ui->tableView_personel, p.afficher());
             QMessageBox::information(this, "✅ Succès", "Personnel supprimé avec succès !");
             // Vider les champs après suppression
-            ui->ID->clear();
             ui->Nom->clear();
             ui->prenom->clear();
-            ui->competence->clear();
+            ui->competence->setCurrentIndex(0);
             ui->Zone->clear();
         } else {
             // Récupérer l'erreur SQL réelle pour afficher un message plus détaillé
@@ -2467,15 +3986,23 @@ void MainWindow::on_Supprimerperso_clicked()
 // Modifier
 void MainWindow::on_Modifierperso_clicked()
 {
-    QString id = ui->ID->text().trimmed();
+    QString id;
+    if (ui->tableView_personel && ui->tableView_personel->selectionModel() &&
+        ui->tableView_personel->selectionModel()->hasSelection()) {
+        int row = ui->tableView_personel->selectionModel()->selectedRows().first().row();
+        QAbstractItemModel *model = ui->tableView_personel->model();
+        if (model)
+            id = model->index(row, 0).data().toString().trimmed();
+    }
+
     QString nom = ui->Nom->text().trimmed();
     QString prenom = ui->prenom->text().trimmed();
-    QString comp = ui->competence->text().trimmed();
+    QString comp = ui->competence->currentText().trimmed();
     QString zone = ui->Zone->text().trimmed();
 
-    // Validation des champs
+    // Validation de la sélection
     if (id.isEmpty()) {
-        QMessageBox::warning(this, "⚠️ Champ vide", "L'ID est obligatoire pour la modification !");
+        QMessageBox::warning(this, "⚠️ Sélection requise", "Veuillez sélectionner un personnel dans le tableau pour la modification !");
         return;
     }
 
@@ -2553,5 +4080,155 @@ void MainWindow::on_Affperso_clicked()
 void MainWindow::on_Modifierperso_2_clicked()
 {
     on_Affperso_clicked();
+}
+
+// === Recherche, tri et export pour "les metiers basiques" (personnels) ===
+
+void MainWindow::on_pushButton_40_clicked()
+{
+    // Recherche des personnels via la barre "Rechercher des personnels"
+    if (!ui || !ui->tableView_personel)
+        return;
+
+    QString texte = ui->lineEdit_19 ? ui->lineEdit_19->text().trimmed() : QString();
+
+    QSqlQuery q;
+    QString sql =
+        "SELECT CIN, NOM, PRENOM, ZONE_AFFECTATION, DISPONIBILITE, COMPETENCES "
+        "FROM PERSONNEL";
+
+    bool hasFilter = !texte.isEmpty();
+    bool okInt = false;
+    int cinValue = texte.toInt(&okInt);
+
+    if (hasFilter) {
+        sql += " WHERE ";
+        QStringList conds;
+        if (okInt) {
+            conds << "CIN = :cin";
+        }
+        conds << "UPPER(NOM) LIKE UPPER(:tlike)"
+              << "UPPER(PRENOM) LIKE UPPER(:tlike)"
+              << "UPPER(COMPETENCES) LIKE UPPER(:tlike)"
+              << "UPPER(ZONE_AFFECTATION) LIKE UPPER(:tlike)";
+        sql += conds.join(" OR ");
+    }
+
+    sql += " ORDER BY NOM";
+    q.prepare(sql);
+    if (hasFilter) {
+        if (okInt)
+            q.bindValue(":cin", cinValue);
+        q.bindValue(":tlike", "%" + texte + "%");
+    }
+
+    if (!q.exec()) {
+        QMessageBox::warning(this, tr("Recherche personnels"),
+                             tr("Erreur SQL lors de la recherche : %1").arg(q.lastError().text()));
+        return;
+    }
+
+    QSqlQueryModel *model = new QSqlQueryModel(this);
+    model->setQuery(q);
+    model->setHeaderData(0, Qt::Horizontal, tr("CIN"));
+    model->setHeaderData(1, Qt::Horizontal, tr("Nom"));
+    model->setHeaderData(2, Qt::Horizontal, tr("Prénom"));
+    model->setHeaderData(3, Qt::Horizontal, tr("Zone"));
+    model->setHeaderData(4, Qt::Horizontal, tr("Disponibilité"));
+    model->setHeaderData(5, Qt::Horizontal, tr("Compétences"));
+
+    afficherPersonnel(ui->tableView_personel, model);
+}
+
+void MainWindow::on_comboBox_10_currentIndexChanged(int)
+{
+    // Tri des personnels via la combo "TRIER PAR" de l'onglet metiers basiques
+    if (!ui || !ui->tableView_personel || !ui->comboBox_10)
+        return;
+
+    QString critere = ui->comboBox_10->currentText();
+    QString orderCol = "NOM";
+
+    QString c = critere.toLower().trimmed();
+    if (c.contains("prenom"))
+        orderCol = "PRENOM";
+    else if (c.contains("zone"))
+        orderCol = "ZONE_AFFECTATION";
+    else if (c.contains("dispo"))
+        orderCol = "DISPONIBILITE";
+    else if (c.contains("compet"))
+        orderCol = "COMPETENCES";
+    else
+        orderCol = "NOM";
+
+    QSqlQueryModel *model = new QSqlQueryModel(this);
+    model->setQuery(
+        "SELECT CIN, NOM, PRENOM, ZONE_AFFECTATION, DISPONIBILITE, COMPETENCES "
+        "FROM PERSONNEL ORDER BY " + orderCol);
+
+    model->setHeaderData(0, Qt::Horizontal, tr("CIN"));
+    model->setHeaderData(1, Qt::Horizontal, tr("Nom"));
+    model->setHeaderData(2, Qt::Horizontal, tr("Prénom"));
+    model->setHeaderData(3, Qt::Horizontal, tr("Zone"));
+    model->setHeaderData(4, Qt::Horizontal, tr("Disponibilité"));
+    model->setHeaderData(5, Qt::Horizontal, tr("Compétences"));
+
+    afficherPersonnel(ui->tableView_personel, model);
+}
+
+void MainWindow::on_pushButton_18_clicked()
+{
+    // Exporter le tableau des personnels en PDF
+    if (!ui || !ui->tableView_personel)
+        return;
+
+    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QString fileName = QFileDialog::getSaveFileName(
+        this, tr("Exporter les personnels en PDF"),
+        defaultPath + "/personnels.pdf",
+        tr("PDF (*.pdf)"));
+
+    if (fileName.isEmpty())
+        return;
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(fileName);
+    printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageOrientation(QPageLayout::Landscape);
+
+    QPainter painter;
+    if (!painter.begin(&printer)) {
+        QMessageBox::warning(this, tr("Export PDF"), tr("Impossible de créer le fichier PDF."));
+        return;
+    }
+
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // Marge autour du tableau
+    QRect rect = painter.viewport();
+    int margin = 40;
+    QRect drawRect = QRect(rect.left() + margin, rect.top() + margin,
+                           rect.width() - 2 * margin, rect.height() - 2 * margin);
+
+    // Ajuster l'échelle pour faire tenir le QTableView dans la page
+    QSize tableSize = ui->tableView_personel->size();
+    if (tableSize.width() <= 0 || tableSize.height() <= 0) {
+        tableSize = QSize(800, 400);
+    }
+    double xScale = double(drawRect.width()) / tableSize.width();
+    double yScale = double(drawRect.height()) / tableSize.height();
+    double scale = qMin(xScale, yScale);
+
+    painter.save();
+    painter.translate(drawRect.topLeft());
+    painter.scale(scale, scale);
+    ui->tableView_personel->render(&painter);
+    painter.restore();
+
+    painter.end();
+
+    QMessageBox::information(this, tr("Export PDF"),
+                             tr("Les personnels ont été exportés dans :\n%1").arg(fileName));
 }
 
