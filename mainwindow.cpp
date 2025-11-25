@@ -30,11 +30,8 @@ MainWindow::MainWindow(QWidget *parent)
     , networkManager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
-
-    // ========== CONFIGURATION TWILIO ==========
-    TWILIO_ACCOUNT_SID = "";      // ← VOS VRAIES VALEURS
-    TWILIO_AUTH_TOKEN = "";         // ← VOS VRAIES VALEURS
-    TWILIO_PHONE_NUMBER = "";                           // ← VOTRE NUMÉRO TWILIO
+    // LIGNE 35 - MET ÇA :
+    string twilio_key = getenv("TWILIO_KEY");  // Variable d'environnement                         // ← VOTRE NUMÉRO TWILIO
 
     // ========== TIMER POUR ALERTES AUTOMATIQUES ==========
     timerAlertes = new QTimer(this);
