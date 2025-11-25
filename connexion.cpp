@@ -8,9 +8,9 @@ Connexion::Connexion()
     db = QSqlDatabase::addDatabase("QODBC");
 
     // DSN / Utilisateur / Mot de passe
-    db.setDatabaseName("city");   // Nom de ta base Oracle (ex : city)
-    db.setUserName("imen");     // Utilisateur Oracle
-    db.setPassword("admin123");   // Mot de passe Oracle
+    db.setDatabaseName("city");
+    db.setUserName("imen");
+    db.setPassword("admin123");
 }
 
 // Singleton

@@ -12,10 +12,12 @@ private:
     int NB_PERSONNES;
     double SURFACE;
     QString TYPE_LOGEMENT;
+    QString TELEPHONE_CONTACT;  // ← nouveau
 
 public:
     Habitat();
-    Habitat(int id, QString adresse, int nb_personnes, double surface, QString type_logement);
+    Habitat(int id, QString adresse, int nb_personnes, double surface,
+            QString type_logement, QString telephone = "+216");
 
     // Getters
     int getID_HABITAT() const;
@@ -23,6 +25,7 @@ public:
     int getNB_PERSONNES() const;
     double getSURFACE() const;
     QString getTYPE_LOGEMENT() const;
+    QString getTELEPHONE_CONTACT() const;
 
     // CRUD
     bool ajouter();
