@@ -4,8 +4,16 @@
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QPushButton>
+#include <QTableView>
+#include <QSqlQueryModel>
+#include <QLabel>
 #include "zone.h"
 #include "poubelle.h"
+#include "habitantcrud.h"
+#include "vehiculecrud.h"
+#include "graph.h"
+
+class QGraphicsScene;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -18,11 +26,13 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    void refreshGraph();
+    void renderBinsGraph(int zoneId);
     void setupTable();
 
 private slots:
     // Navigation buttons
+    void setupGraph();
     void on_pushButton_clicked();
     void on_pushButton2_clicked();
     void on_pushButton3_clicked();
@@ -60,20 +70,82 @@ private slots:
     void on_pushButton_30_clicked();
 
     // CRUD buttons
+    void on_searchpp_clicked();   // Search poubelle
+    void on_tri_2_clicked();      // Sort poubelle
+    void on_exp_2_clicked();
     void on_ajzone_clicked();
     void on_ajpoub_clicked();
+    void on_statisticpoubelles_clicked();
     void on_suppzone_clicked();
     void on_supppoub_clicked();
     void afficherZones();
     void afficherPoubelles();
     void modZone();   // Modify Zone
     void modPoubelle(); // Modify Poubelle
+    void on_twz_cellClicked(int row, int column);   // Table cell click
+    void on_twp_cellClicked(int row, int column);
+    void on_searchzone_clicked();      // Search zone
+    void on_exp_clicked();             // Export table
+    void on_tri_clicked();             // Sort table
+    // === CRUD HABITANTS ===
+    void on_pushButton_ajoutH_clicked();
+    void on_pushButton_modifH_clicked();
+    void on_pushButton_suppH_clicked();
+    void on_pushButton_afficheH_clicked();
+    // === CRUD VEHICULES ===
+    void on_btn_vehicule_ajouter_clicked();
+    void on_btn_vehicule_modifier_clicked();
+    void on_btn_vehicule_supprimer_clicked();
+    void on_btn_vehicule_rechercher_clicked();
+    void on_btn_vehicule_afficher_clicked();
+    void on_tableView_vehicule_clicked(const QModelIndex &index);
+
+    // === Recherche & Tri ===
+    void on_pushButton_rechH_clicked();
+    void on_pushButton_trieH_clicked();
+    void on_tableView_habitants_clicked(const QModelIndex &index);
+
+    // === CRUD PERSONNELS ===
+    void on_ajouterperso_clicked();
+    void on_Modifierperso_clicked();
+    void on_Modifierperso_2_clicked();
+    void on_Supprimerperso_clicked();
+    void on_Affperso_clicked();
 
     // Generic delete for table rows
     void supprimerEtDecalerLignes();
+    void reloadBinsCache();
 
 private:
     Ui::MainWindow *ui;
+    QLabel *binMessageLabel = nullptr;
+
+    // === Habitant helpers ===
+    void chargerDonneesTable();
+    void rechercherTexte(const QString &texte);
+    QStringList allowedStatuses;
+    void chargerStatutsAutorises();
+    bool statutAutorise(const QString &value) const;
+    void styliserChampsSaisie();
+    void saveLastHabitantId(int id);
+    void loadLastHabitantSelection();
+    void populateEditsFromRow(int row);
+    void afficherPersonnel(QTableView *tableView, QSqlQueryModel *model);
+
+    // === Graph integration ===
+    Graph *graphScene = nullptr;
+    QGraphicsScene *zonesScene = nullptr;
+    QGraphicsScene *binsScene = nullptr;
+
+    struct BinInfo {
+        int id = 0;
+        int zoneId = 0;
+        int cap = 0;
+        QString status;
+    };
+    QVector<BinInfo> binsCache;
+    int currentBinsZoneId = -1;
+
 };
 
 #endif // MAINWINDOW_H
