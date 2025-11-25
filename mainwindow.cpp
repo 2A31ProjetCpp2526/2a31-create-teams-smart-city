@@ -32,9 +32,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     // ========== CONFIGURATION TWILIO ==========
-    TWILIO_ACCOUNT_SID = "AC00f47fd2aaba48807f813f80acce555b";      // ← VOS VRAIES VALEURS
-    TWILIO_AUTH_TOKEN = "0335e5eada887edc34b5d539939eb402";         // ← VOS VRAIES VALEURS
-    TWILIO_PHONE_NUMBER = "+17573566519";                           // ← VOTRE NUMÉRO TWILIO
+    TWILIO_ACCOUNT_SID = "";      // ← VOS VRAIES VALEURS
+    TWILIO_AUTH_TOKEN = "";         // ← VOS VRAIES VALEURS
+    TWILIO_PHONE_NUMBER = "";                           // ← VOTRE NUMÉRO TWILIO
 
     // ========== TIMER POUR ALERTES AUTOMATIQUES ==========
     timerAlertes = new QTimer(this);
