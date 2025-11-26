@@ -1,5 +1,49 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "poubelle.h"
+#include "personnel.h"
+#include "habitantcrud.h"
+#include "vehiculecrud.h"
+#include <QHeaderView>
+#include <QPushButton>
+#include <QMessageBox>
+#include <QDebug>
+#include <QInputDialog>
+#include <QSqlQueryModel>
+#include <QSqlQuery>
+#include <QSqlRecord>
+#include <QSqlError>
+#include <QCompleter>
+#include <QListView>
+#include <QLineEdit>
+#include <QSettings>
+#include <QItemSelectionModel>
+#include <QRegularExpression>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QPdfWriter>
+#include <QPainter>
+#include <cmath>
+#include <QTableWidgetItem>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QPrinter>
+#include <QTextDocument>
+#include <QStringList>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QPlainTextEdit>
+#include <QHeaderView>
+#include <QMap>
+#include <tuple>
+#include <QLabel>
+#include "graph.h"
+#include <QSqlQuery>
+#include <QGraphicsRectItem>
+#include <QGraphicsSimpleTextItem>
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
 #include <QHeaderView>
 #include <QPushButton>
 #include <QMessageBox>
@@ -69,6 +113,26 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    graphScene = new Graph(this);
+    zonesScene = new QGraphicsScene(this);
+    ui->graphicsZones_2->setScene(zonesScene);
+    ui->graphicsZones_2->setRenderHint(QPainter::Antialiasing);
+
+    binsScene = new QGraphicsScene(this);
+    ui->graphicsBins_2->setScene(binsScene);
+    ui->graphicsBins_2->setRenderHint(QPainter::Antialiasing);
+    if (!binMessageLabel) {
+        QWidget *parent = ui->graphicsBins_2->parentWidget();
+        binMessageLabel = new QLabel(parent);
+        binMessageLabel->setWordWrap(true);
+        binMessageLabel->setStyleSheet("font-weight:bold; color:green;");
+        // place under the view based on current geometry; will not auto-resize but fine for standard UI
+        QRect g = ui->graphicsBins_2->geometry();
+        binMessageLabel->setGeometry(g.x(), g.y() + g.height() + 4, g.width(), 48);
+        binMessageLabel->show();
+    }
+
+    reloadBinsCache();
     affectationSummaryLabel = nullptr;
     qApp->setStyleSheet(
         "QMessageBox QLabel, QInputDialog QLabel, QLineEdit { color: black; }"
@@ -76,7 +140,7 @@ MainWindow::MainWindow(QWidget *parent)
         );
 
     setupTable();
-
+    refreshGraph();
     // === Habitant helpers (validators, styles, statuses, data load) ===
     chargerStatutsAutorises();
     styliserChampsSaisie();
@@ -89,6 +153,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     // Validators
+    ui->graphicsZones_2->setRenderHint(QPainter::Antialiasing);
     ui->lineEdit_id->setValidator(new QIntValidator(1, 2147483647, this));
     ui->lineEdit_satisfaction->setValidator(new QIntValidator(0, 100, this));
     ui->lineEdit_contact->setValidator(new QRegularExpressionValidator(QRegularExpression("^\\d{0,15}$"), this));
@@ -204,10 +269,16 @@ MainWindow::MainWindow(QWidget *parent)
             }
         });
     }
+
+    connect(ui->btnLoadMap, &QPushButton::clicked, this, &MainWindow::refreshGraph);
+    connect(ui->exp, &QPushButton::clicked, this, &MainWindow::on_exp_clicked);
+    connect(ui->tri, &QPushButton::clicked, this, &MainWindow::on_tri_clicked);
     connect(ui->affzone, &QPushButton::clicked, this, &MainWindow::afficherZones);
     connect(ui->affpoub, &QPushButton::clicked, this, &MainWindow::afficherPoubelles);
     connect(ui->modzone, &QPushButton::clicked, this, &MainWindow::modZone);
     connect(ui->modpoub, &QPushButton::clicked, this, &MainWindow::modPoubelle);
+    connect(ui->twp, &QTableWidget::cellClicked,
+            this, &MainWindow::on_twp_cellClicked);
 
     // === Satisfaction tab wiring (optional if widgets exist) ===
     if (QPushButton *btn = findChild<QPushButton*>("btn_satisfaction_refresh")) {
@@ -2684,6 +2755,500 @@ void MainWindow::on_geszone1_clicked() { ui->stackedWidget_3->setCurrentIndex(1)
 }
 */
 // ==================== CRUD Add Mahdy====================
+void MainWindow::setupGraph()
+{
+    if (!graphScene)
+        graphScene = new Graph(this);
+
+    if (!zonesScene) {
+        zonesScene = new QGraphicsScene(this);
+        ui->graphicsZones_2->setScene(zonesScene);
+        ui->graphicsZones_2->setRenderHint(QPainter::Antialiasing);
+    }
+
+    if (!binsScene) {
+        binsScene = new QGraphicsScene(this);
+        ui->graphicsBins_2->setScene(binsScene);
+        ui->graphicsBins_2->setRenderHint(QPainter::Antialiasing);
+    }
+}
+
+// Render simple bins visualization for a zone (capacity + status)
+void MainWindow::renderBinsGraph(int zoneId)
+{
+    setupGraph();
+    if (!binsScene) return;
+
+    binsScene->clear();
+    currentBinsZoneId = zoneId;
+
+    const Graph::Zone *zone = graphScene ? graphScene->zoneById(zoneId) : nullptr;
+    if (!zone) {
+        statusBar()->showMessage(tr("Zone %1 introuvable pour le graphe").arg(zoneId), 5000);
+        return;
+    }
+
+    // capacity calculation (keep your constant)
+    const double CAPACITY_PER_1000_POP = 10.0;
+    const double requiredCapacity = (zone->pop * CAPACITY_PER_1000_POP) / 1000.0;
+
+    // layout tunables
+    const int cols = 10;
+    const qreal startX = 20.0;
+    const qreal startY = 20.0;
+    const qreal binSize = 16.0;           // square size
+    const qreal spacingX = 24.0;          // horizontal step between bins
+    const qreal spacingY = 30.0;          // vertical step (room for capacity label)
+
+    int index = 0;
+    int functionalCapacity = 0;
+    QStringList messages;
+
+    // fonts (created once)
+    QFont idFont;
+    idFont.setBold(true);
+    idFont.setPointSize(9);
+
+    QFont capFont;
+    capFont.setPointSize(3);
+
+    for (const BinInfo &b : binsCache) {
+        if (b.zoneId != zoneId) continue;
+
+        const int col = index % cols;
+        const int row = index / cols;
+        QRectF rect(startX + col * spacingX,
+                    startY + row * spacingY,
+                    binSize,
+                    binSize);
+
+        // Draw the bin rectangle
+        QPen pen(Qt::black);
+        QGraphicsRectItem *item = binsScene->addRect(rect, pen);
+        item->setZValue(0); // rectangle behind text
+
+        // status -> fill/outline rules
+        const QString status = b.status.trimmed().toUpper();
+        if (status == QLatin1String("BROKEN")) {
+            item->setBrush(QColor(255, 165, 0)); // orange
+            messages << tr("Bin %1 is broken").arg(b.id);
+        } else if (status == QLatin1String("DAMAGED") || status == QLatin1String("ENDOMMAGE")) {
+            item->setBrush(Qt::NoBrush);
+            QPen p = item->pen();
+            p.setStyle(Qt::DashLine);
+            p.setColor(Qt::red);
+            item->setPen(p);
+            messages << tr("Bin %1 needs repair").arg(b.id);
+        } else if (status == QLatin1String("FULL") || status == QLatin1String("PLEIN")) {
+            item->setBrush(Qt::red);
+            messages << tr("Bin %1 is full").arg(b.id);
+        } else {
+            item->setBrush(Qt::green);
+            functionalCapacity += b.cap;
+        }
+
+        // --- ID label (centered inside the bin) ---
+        QGraphicsSimpleTextItem *idLabel = binsScene->addSimpleText(QString::number(b.id));
+        idLabel->setFont(idFont);
+        idLabel->setBrush(Qt::black);
+        // bounding rect may depend on font, so measure it
+        QRectF idBounds = idLabel->boundingRect();
+        qreal idX = rect.left() + (rect.width() - idBounds.width()) / 2.0;
+        qreal idY = rect.top()  + (rect.height() - idBounds.height()) / 2.0;
+        idLabel->setPos(idX, idY);
+        idLabel->setZValue(10); // above the rectangle
+
+        // --- Capacity label below the bin (small, black) ---
+        QGraphicsSimpleTextItem *capLabel = binsScene->addSimpleText(QString::number(b.cap));
+        capLabel->setFont(capFont);
+        capLabel->setBrush(Qt::black); // changed to black
+        QRectF capBounds = capLabel->boundingRect();
+        qreal capX = rect.left() + (rect.width() - capBounds.width()) / 2.0;
+        qreal capY = rect.bottom() + 2.0;
+        capLabel->setPos(capX, capY);
+        capLabel->setZValue(10);
+
+        // optional: tooltip for more info
+        QString tip = tr("Bin %1\nCapacity: %2\nStatus: %3")
+                          .arg(b.id)
+                          .arg(b.cap)
+                          .arg(b.status);
+        item->setToolTip(tip);
+        idLabel->setToolTip(tip);
+        capLabel->setToolTip(tip);
+
+        ++index;
+    }
+
+    // determine zone validity message and style
+    QString resultMsg;
+    QString colorStyle;
+    if (functionalCapacity > requiredCapacity) {
+        resultMsg = tr("Zone valide");
+        colorStyle = "color:green; font-weight:bold;";
+    } else if (std::abs(functionalCapacity - requiredCapacity) < 0.001) {
+        resultMsg = tr("Zone limite, surveiller la capacité");
+        colorStyle = "color:orange; font-weight:bold;";
+    } else {
+        resultMsg = tr("Zone non valide : capacité insuffisante");
+        colorStyle = "color:red; font-weight:bold;";
+    }
+
+    QString mainMessage = tr("Zone %1 → Capacité requise: %2 | Capacité disponible: %3\n%4")
+                              .arg(zoneId)
+                              .arg(QString::number(requiredCapacity, 'f', 2))
+                              .arg(functionalCapacity)
+                              .arg(resultMsg);
+
+    if (!messages.isEmpty())
+        mainMessage += "\n" + messages.join("\n");
+
+    // Display summary under the bins graph as requested
+    if (binMessageLabel) {
+        binMessageLabel->setStyleSheet(colorStyle);
+        binMessageLabel->setText(mainMessage);
+    } else {
+        statusBar()->showMessage(mainMessage, 8000);
+    }
+
+    // Fit the scene into view if we have items
+    if (binsScene && !binsScene->items().isEmpty())
+        ui->graphicsBins_2->fitInView(binsScene->itemsBoundingRect(), Qt::KeepAspectRatio);
+}
+
+void MainWindow::reloadBinsCache()
+{
+    binsCache.clear();
+
+    QSqlQuery query;
+    if (!query.exec("SELECT ID_BIN, ID_ZONE, CAPACITE, STATUS FROM GESPUB"))
+        return;
+
+    while (query.next()) {
+        BinInfo b;
+        b.id = query.value("ID_BIN").toInt();
+        b.zoneId = query.value("ID_ZONE").toInt();
+        b.cap = query.value("CAPACITE").toInt();
+        b.status = query.value("STATUS").toString();
+        binsCache.append(b);
+    }
+}
+
+// Call this whenever the database changes to refresh the map
+void MainWindow::refreshGraph()
+{
+    setupGraph();
+    if (!graphScene || !zonesScene)
+        return;
+
+    graphScene->loadFromDatabase();
+    graphScene->renderToScene(zonesScene);
+
+    if (!zonesScene->items().isEmpty())
+        ui->graphicsZones_2->fitInView(zonesScene->itemsBoundingRect(), Qt::KeepAspectRatio);
+
+    reloadBinsCache();
+
+    if (currentBinsZoneId > 0)
+        renderBinsGraph(currentBinsZoneId);
+
+    ui->graphicsZones_2->viewport()->update();
+}
+void MainWindow::on_exp_2_clicked()
+{
+    QString fileNameBase = ui->filenamep->text().trimmed();
+
+    if (fileNameBase.isEmpty()) {
+        QMessageBox::warning(this, "⚠️ Nom vide", "Entrez un nom de fichier !");
+        return;
+    }
+
+    QString downloadsPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    QString fullPath;
+
+    // PDF
+    if (ui->typeexp_2->currentIndex() == 0)
+    {
+        fullPath = downloadsPath + "/" + fileNameBase + ".pdf";
+
+        QString html = "<h2>Liste des poubelles</h2><table border='1' cellspacing='0' cellpadding='3'><tr>";
+
+        for (int col = 0; col < ui->twp->columnCount(); ++col)
+            html += "<th>" + ui->twp->horizontalHeaderItem(col)->text() + "</th>";
+
+        html += "</tr>";
+
+        for (int row = 0; row < ui->twp->rowCount(); ++row)
+        {
+            html += "<tr>";
+            for (int col = 0; col < ui->twp->columnCount(); ++col)
+                html += "<td>" + ui->twp->item(row, col)->text() + "</td>";
+            html += "</tr>";
+        }
+
+        html += "</table>";
+
+        QTextDocument doc;
+        doc.setHtml(html);
+
+        QPrinter printer;                  // Qt6 compatible
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOutputFileName(fullPath);
+
+        doc.print(&printer);
+    }
+    else
+    {
+        // CSV
+        fullPath = downloadsPath + "/" + fileNameBase + ".csv";
+        QFile file(fullPath);
+
+        if(file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QTextStream out(&file);
+
+            for (int col = 0; col < ui->twp->columnCount(); ++col)
+            {
+                out << ui->twp->horizontalHeaderItem(col)->text();
+                if (col < ui->twp->columnCount() - 1) out << ",";
+            }
+            out << "\n";
+
+            for (int row = 0; row < ui->twp->rowCount(); ++row)
+            {
+                for (int col = 0; col < ui->twp->columnCount(); ++col)
+                {
+                    out << ui->twp->item(row, col)->text();
+                    if (col < ui->twp->columnCount() - 1) out << ",";
+                }
+                out << "\n";
+            }
+
+            file.close();
+        }
+    }
+
+    QMessageBox::information(this, "✅ Export", "Fichier exporté :\n" + fullPath);
+}
+void MainWindow::on_tri_2_clicked()
+{
+    int sortIndex = ui->cbt->currentIndex();
+
+    Poubelle p;
+    QSqlQueryModel* model = p.trier(sortIndex);
+
+    // RESET ONLY ROWS (not headers)
+    ui->twp->setRowCount(0);
+
+    // SET COLUMN COUNT FROM MODEL
+    ui->twp->setColumnCount(model->columnCount());
+
+    // SET HEADERS
+    for (int c = 0; c < model->columnCount(); ++c) {
+        ui->twp->setHorizontalHeaderItem(
+            c,
+            new QTableWidgetItem(model->headerData(c, Qt::Horizontal).toString())
+            );
+    }
+
+    // INSERT DATA
+    for (int r = 0; r < model->rowCount(); ++r) {
+        ui->twp->insertRow(r);
+        for (int c = 0; c < model->columnCount(); ++c) {
+            ui->twp->setItem(
+                r,
+                c,
+                new QTableWidgetItem(model->data(model->index(r, c)).toString())
+                );
+        }
+    }
+}
+void MainWindow::on_searchpp_clicked()
+{
+    QString searchId = ui->searchp->text().trimmed();
+
+    if(searchId.isEmpty()) {
+        QMessageBox::warning(this, "⚠️ Vide", "Veuillez entrer un ID !");
+        return;
+    }
+
+    bool found = false;
+
+    for (int row = 0; row < ui->twp->rowCount(); ++row)
+    {
+        bool match = (ui->twp->item(row, 0)->text() == searchId);
+
+        for (int col = 0; col < ui->twp->columnCount(); ++col)
+        {
+            if (match)
+            {
+                ui->twp->item(row, col)->setBackground(Qt::yellow);
+                found = true;
+            }
+            else
+            {
+                ui->twp->item(row, col)->setBackground(Qt::white);
+            }
+        }
+    }
+
+    if (!found)
+        QMessageBox::information(this, "❌ Non trouvé", "Aucune poubelle trouvée !");
+}
+void MainWindow::on_searchzone_clicked()
+{
+    QString searchId = ui->searchz->text().trimmed();
+    if (searchId.isEmpty()) {
+        QMessageBox::warning(this, "⚠️ Champ vide", "Veuillez entrer un ID de zone !");
+        return;
+    }
+
+    bool found = false;
+    for (int row = 0; row < ui->twz->rowCount(); ++row) {
+        bool match = (ui->twz->item(row, 0)->text() == searchId);
+        for (int col = 0; col < ui->twz->columnCount(); ++col) {
+            if (match) {
+                ui->twz->item(row, col)->setBackground(Qt::yellow);
+                found = true;
+            } else {
+                // Reset background if not matching
+                ui->twz->item(row, col)->setBackground(Qt::white);
+            }
+        }
+    }
+
+    if (!found) {
+        QMessageBox::information(this, "ℹ️ Non trouvé", "Aucune zone avec cet ID n'a été trouvée !");
+    }
+}
+void MainWindow::on_exp_clicked()
+{
+    QString fileNameBase = ui->nameexp->text().trimmed();
+
+    if (fileNameBase.isEmpty()) {
+        QMessageBox::warning(this, "⚠️ Nom manquant", "Veuillez entrer un nom pour le fichier !");
+        return;
+    }
+
+    // Get Downloads folder
+    QString downloadsPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    QString fullPath;
+
+    if (ui->typeexp->currentIndex() == 0) { // PDF
+        fullPath = downloadsPath + QDir::separator() + fileNameBase + ".pdf";
+
+        // --- Create PDF using QTextDocument + QPrinter ---
+        QString html;
+        html += "<h2>Liste des zones exportée</h2>";
+        html += "<table border='1' cellspacing='0' cellpadding='3'>";
+
+        // Header
+        html += "<tr>";
+        for (int col = 0; col < ui->twz->columnCount(); ++col)
+            html += "<th>" + ui->twz->horizontalHeaderItem(col)->text() + "</th>";
+        html += "</tr>";
+
+        // Data
+        for (int row = 0; row < ui->twz->rowCount(); ++row) {
+            html += "<tr>";
+            for (int col = 0; col < ui->twz->columnCount(); ++col) {
+                html += "<td>" + ui->twz->item(row, col)->text() + "</td>";
+            }
+            html += "</tr>";
+        }
+
+        html += "</table>";
+
+        QTextDocument doc;
+        doc.setHtml(html);
+
+        QPrinter printer(QPrinter::PrinterResolution);
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOutputFileName(fullPath);
+
+        doc.print(&printer);
+
+    } else { // EXCEL / CSV
+        fullPath = downloadsPath + QDir::separator() + fileNameBase + ".csv";
+        QFile file(fullPath);
+        if(file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&file);
+            // Optional: write headers
+            for (int col = 0; col < ui->twz->columnCount(); ++col) {
+                out << ui->twz->horizontalHeaderItem(col)->text();
+                if (col != ui->twz->columnCount()-1) out << ",";
+            }
+            out << "\n";
+
+            // Write table content
+            for (int row = 0; row < ui->twz->rowCount(); ++row) {
+                for (int col = 0; col < ui->twz->columnCount(); ++col) {
+                    out << ui->twz->item(row, col)->text();
+                    if (col != ui->twz->columnCount()-1) out << ",";
+                }
+                out << "\n";
+            }
+            file.close();
+        }
+    }
+
+    QMessageBox::information(this, "✅ Export terminé", "Fichier exporté dans le dossier Downloads:\n" + fullPath);
+}
+void MainWindow::on_tri_clicked()
+{
+    int sortIndex = ui->tris->currentIndex(); // 0 = ID_ZONE, 1 = POPULATION
+
+    Zone z;
+    QSqlQueryModel* model = z.trier(sortIndex); // <-- you need to create this function in Zone
+
+    ui->twz->clear();
+    ui->twz->setRowCount(model->rowCount());
+    ui->twz->setColumnCount(model->columnCount());
+
+    for (int c = 0; c < model->columnCount(); ++c)
+        ui->twz->setHorizontalHeaderItem(c, new QTableWidgetItem(model->headerData(c, Qt::Horizontal).toString()));
+
+    for (int r = 0; r < model->rowCount(); ++r)
+    {
+        for (int c = 0; c < model->columnCount(); ++c)
+        {
+            QString val = model->data(model->index(r, c)).toString();
+            ui->twz->setItem(r, c, new QTableWidgetItem(val));
+        }
+    }
+}
+void MainWindow::on_twp_cellClicked(int row, int column)
+{
+    Q_UNUSED(column);  // removes warning
+
+    QString id_bin   = ui->twp->item(row, 0)->text(); // ID_BIN
+    QString capacite = ui->twp->item(row, 1)->text(); // CAPACITE
+    QString stat     = ui->twp->item(row, 2)->text(); // STATUS
+    QString id_zone  = ui->twp->item(row, 3)->text(); // ID_ZONE
+
+    ui->pubid->setText(id_bin);
+    ui->cap->setText(capacite);
+    // status is a QComboBox now, set current text
+    ui->status->setCurrentText(stat);
+    ui->zoneid->setText(id_zone);
+}
+
+void MainWindow::on_twz_cellClicked(int row, int column)
+{
+    Q_UNUSED(column); // remove warning
+
+    ui->idzone->setText(ui->twz->item(row, 0)->text()); // ID_ZONE
+    ui->pop->setText(ui->twz->item(row, 1)->text());    // POPULATION
+    ui->x->setText(ui->twz->item(row, 2)->text());      // X
+    ui->y->setText(ui->twz->item(row, 3)->text());      // Y
+    ui->l->setText(ui->twz->item(row, 4)->text());      // LENGTH
+    ui->h->setText(ui->twz->item(row, 5)->text());      // HEIGHT
+
+    // Show associated poubelles for the selected zone
+    int zid = ui->twz->item(row, 0)->text().toInt();
+    reloadBinsCache();
+    renderBinsGraph(zid);
+}
 void MainWindow::on_ajzone_clicked()
 {
     // --- Contrôle de saisie ---
@@ -2710,6 +3275,9 @@ void MainWindow::on_ajzone_clicked()
         QMessageBox::information(this, "✅ Succès", "Zone ajoutée avec succès !");
     else
         QMessageBox::critical(this, "❌ Erreur", "Échec d'ajout de la zone !");
+
+    // Keep the graph active after a DB insert
+    refreshGraph();
 }
 
 void MainWindow::on_ajpoub_clicked()
@@ -2718,16 +3286,17 @@ void MainWindow::on_ajpoub_clicked()
     if (ui->pubid->text().isEmpty() ||
         ui->zoneid->text().isEmpty() ||
         ui->cap->text().isEmpty() ||
-        ui->status->text().isEmpty())
+        ui->status->currentText().isEmpty())
     {
         QMessageBox::warning(this, "⚠️ Champ vide", "Tous les champs doivent être remplis !");
         return;
     }
 
-    QString status = ui->status->text().trimmed().toLower();
-    if (status != "vide" && status != "plein")
+    QString status = ui->status->currentText().trimmed().toLower();
+    // allow 'vide', 'plein' or 'broken' (english)
+    if (status != "vide" && status != "plein" && status != "broken")
     {
-        QMessageBox::warning(this, "⚠️ Statut invalide", "Le statut doit être soit 'vide' soit 'plein' !");
+        QMessageBox::warning(this, "⚠️ Statut invalide", "Le statut doit être 'vide', 'plein' ou 'broken' !");
         return;
     }
 
@@ -2754,6 +3323,92 @@ void MainWindow::on_ajpoub_clicked()
         QMessageBox::information(this, "✅ Succès", "Poubelle ajoutée avec succès !");
     else
         QMessageBox::critical(this, "❌ Erreur", "Échec d'ajout de la poubelle !");
+
+    // After adding a bin, refresh bin view for the zone
+    reloadBinsCache();
+    renderBinsGraph(zoneid);
+}
+
+void MainWindow::on_statisticpoubelles_clicked()
+{
+    // Aggregate stats from GESPUB
+    QSqlQuery q;
+
+    // Basic counts
+    int totalBins = 0;
+    double sumCap = 0.0;
+    double avgCap = 0.0;
+    double minCap = 0.0, maxCap = 0.0;
+
+    if (q.exec("SELECT COUNT(*), SUM(CAPACITE), AVG(CAPACITE), MIN(CAPACITE), MAX(CAPACITE) FROM GESPUB") && q.next()) {
+        totalBins = q.value(0).toInt();
+        sumCap = q.value(1).toDouble();
+        avgCap = q.value(2).toDouble();
+        minCap = q.value(3).toDouble();
+        maxCap = q.value(4).toDouble();
+    }
+
+    // Status breakdown
+    QMap<QString, int> statusCounts;
+    if (q.exec("SELECT STATUS, COUNT(*) FROM GESPUB GROUP BY STATUS")) {
+        while (q.next()) {
+            QString status = q.value(0).toString();
+            int cnt = q.value(1).toInt();
+            statusCounts[status] = cnt;
+        }
+    }
+
+    // Per-zone breakdown
+    QVector<std::tuple<int,int,double>> perZone; // zoneId, count, sumcap
+    if (q.exec("SELECT ID_ZONE, COUNT(*) AS CNT, SUM(CAPACITE) AS SUMCAP FROM GESPUB GROUP BY ID_ZONE ORDER BY CNT DESC")) {
+        while (q.next()) {
+            int zid = q.value(0).toInt();
+            int cnt = q.value(1).toInt();
+            double sc = q.value(2).toDouble();
+            perZone.push_back({zid, cnt, sc});
+        }
+    }
+
+    // Build dialog
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Statistiques Poubelles"));
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QString header = tr("Total poubelles: %1\nCapacité totale: %2\nCapacité moyenne: %3\nCapacité min: %4 | max: %5")
+                         .arg(totalBins)
+                         .arg(QString::number(sumCap, 'f', 2))
+                         .arg(QString::number(avgCap, 'f', 2))
+                         .arg(QString::number(minCap, 'f', 2))
+                         .arg(QString::number(maxCap, 'f', 2));
+
+    QPlainTextEdit *summary = new QPlainTextEdit(header);
+    summary->setReadOnly(true);
+    summary->setStyleSheet("color:black;");
+    layout->addWidget(summary);
+
+    // Status breakdown text
+    QStringList statusLines;
+    for (auto it = statusCounts.cbegin(); it != statusCounts.cend(); ++it) {
+        statusLines << QString("%1: %2").arg(it.key()).arg(it.value());
+    }
+    QPlainTextEdit *statusView = new QPlainTextEdit(statusLines.join("\n"));
+    statusView->setReadOnly(true);
+    statusView->setStyleSheet("color:black;");
+    layout->addWidget(statusView);
+
+    // Table for per-zone breakdown
+    QTableWidget *zoneTable = new QTableWidget((int)perZone.size(), 3, &dlg);
+    zoneTable->setHorizontalHeaderLabels(QStringList() << tr("Zone") << tr("# Poubelles") << tr("Capacité totale"));
+    zoneTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    for (int i = 0; i < (int)perZone.size(); ++i) {
+        zoneTable->setItem(i, 0, new QTableWidgetItem(QString::number(std::get<0>(perZone[i]))));
+        zoneTable->setItem(i, 1, new QTableWidgetItem(QString::number(std::get<1>(perZone[i]))));
+        zoneTable->setItem(i, 2, new QTableWidgetItem(QString::number(std::get<2>(perZone[i]), 'f', 2)));
+    }
+    zoneTable->setStyleSheet("QTableWidget { color: black; }");
+    layout->addWidget(zoneTable);
+
+    dlg.exec();
 }
 
 // ==================== CRUD Delete ====================
@@ -2775,6 +3430,8 @@ void MainWindow::on_suppzone_clicked()
                 break;
             }
         }
+        // Update graph after deletion
+        refreshGraph();
     }
     else
         QMessageBox::critical(this, "❌ Erreur", "Échec de la suppression de la zone !");
@@ -2782,7 +3439,7 @@ void MainWindow::on_suppzone_clicked()
 
 void MainWindow::on_supppoub_clicked()
 {
-    int idToDelete = QInputDialog::getInt(this, "Supprimer Poubelle", "Entrez l'ID de la poubelle :");
+    int idToDelete = ui->pubid->text().toInt();
 
     Poubelle p;
     if (p.supprimer(idToDelete))
@@ -2798,6 +3455,9 @@ void MainWindow::on_supppoub_clicked()
                 break;
             }
         }
+        // refresh bins view
+        reloadBinsCache();
+        renderBinsGraph(ui->zoneid->text().toInt());
     }
     else
         QMessageBox::critical(this, "❌ Erreur", "Échec de la suppression de la poubelle !");
@@ -2827,41 +3487,40 @@ void MainWindow::afficherZones()
     }
     ui->twz->resizeColumnsToContents();
 }
-
 void MainWindow::afficherPoubelles()
 {
     Poubelle p;
     QSqlQueryModel *model = p.afficher();
 
-    ui->twp->setRowCount(0);
     int rows = model->rowCount();
     int cols = model->columnCount();
+
+    ui->twp->clear();
+    ui->twp->setRowCount(rows);
     ui->twp->setColumnCount(cols);
 
+    // Set headers
     for (int j = 0; j < cols; ++j)
-        ui->twp->setHorizontalHeaderItem(j, new QTableWidgetItem(model->headerData(j, Qt::Horizontal).toString()));
+        ui->twp->setHorizontalHeaderItem(j,
+                                         new QTableWidgetItem(model->headerData(j, Qt::Horizontal).toString()));
 
+    // Fill automatically
     for (int i = 0; i < rows; ++i)
-    {
-        ui->twp->insertRow(i);
         for (int j = 0; j < cols; ++j)
-        {
-            ui->twp->setItem(i, j, new QTableWidgetItem(model->data(model->index(i, j)).toString()));
-        }
-    }
+            ui->twp->setItem(i, j,
+                             new QTableWidgetItem(model->data(model->index(i, j)).toString()));
+
     ui->twp->resizeColumnsToContents();
 }
-
 // ==================== CRUD Modify ====================
 void MainWindow::modZone()
 {
-    int idToModify = QInputDialog::getInt(this, "Modifier Zone", "Entrez l'ID de la zone :");
-
-    int newPop = QInputDialog::getInt(this, "Modifier Zone", "Nouvelle population :");
-    double newX = QInputDialog::getDouble(this, "Modifier Zone", "Nouvelle coordonnée X :");
-    double newY = QInputDialog::getDouble(this, "Modifier Zone", "Nouvelle coordonnée Y :");
-    double newL = QInputDialog::getDouble(this, "Modifier Zone", "Nouvelle longueur :");
-    double newH = QInputDialog::getDouble(this, "Modifier Zone", "Nouvelle hauteur :");
+    int idToModify = ui->idzone->text().toInt();
+    int newPop     = ui->pop->text().toInt();
+    double newX    = ui->x->text().toDouble();
+    double newY    = ui->y->text().toDouble();
+    double newL    = ui->l->text().toDouble();
+    double newH    = ui->h->text().toDouble();
 
     // --- Contrôle : vérifier valeurs ---
     if (newPop <= 0 || newL <= 0 || newH <= 0)
@@ -2875,6 +3534,7 @@ void MainWindow::modZone()
     {
         QMessageBox::information(this, "✅ Succès", "Zone modifiée avec succès !");
         afficherZones();
+        refreshGraph();
     }
     else
         QMessageBox::critical(this, "❌ Erreur", "Échec de modification de la zone !");
@@ -2882,11 +3542,10 @@ void MainWindow::modZone()
 
 void MainWindow::modPoubelle()
 {
-    int idToModify = QInputDialog::getInt(this, "Modifier Poubelle", "Entrez l'ID de la poubelle :");
-
-    int newZoneId = QInputDialog::getInt(this, "Modifier Poubelle", "Nouvel ID de zone :");
-    int newCap = QInputDialog::getInt(this, "Modifier Poubelle", "Nouvelle capacité :");
-    QString newStatus = QInputDialog::getText(this, "Modifier Poubelle", "Nouveau statut :").trimmed().toLower();
+    int idToModify = ui->pubid->text().toInt();
+    int newZoneId  = ui->zoneid->text().toInt();
+    int newCap     = ui->cap->text().toInt();
+    QString newStatus = ui->status->currentText().trimmed().toLower();
 
     // --- Contrôle de saisie ---
     if (newStatus.isEmpty())
@@ -2894,9 +3553,9 @@ void MainWindow::modPoubelle()
         QMessageBox::warning(this, "⚠️ Champ vide", "Le statut ne peut pas être vide !");
         return;
     }
-    if (newStatus != "vide" && newStatus != "plein")
+    if (newStatus != "vide" && newStatus != "plein" && newStatus != "broken")
     {
-        QMessageBox::warning(this, "⚠️ Statut invalide", "Le statut doit être 'vide' ou 'plein' !");
+        QMessageBox::warning(this, "⚠️ Statut invalide", "Le statut doit être 'vide', 'plein' ou 'broken' !");
         return;
     }
 
@@ -2920,6 +3579,8 @@ void MainWindow::modPoubelle()
     {
         QMessageBox::information(this, "✅ Succès", "Poubelle modifiée avec succès !");
         afficherPoubelles();
+        reloadBinsCache();
+        renderBinsGraph(newZoneId);
     }
     else
         QMessageBox::critical(this, "❌ Erreur", "Échec de modification de la poubelle !");

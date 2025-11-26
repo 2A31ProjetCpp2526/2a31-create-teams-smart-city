@@ -1,5 +1,10 @@
 #include "zone.h"
+#include <QSqlQuery>
+#include <QSqlQueryModel>
+#include <QDebug>
+#include <QSqlError>
 
+// ==================== Constructors ====================
 Zone::Zone() {}
 
 Zone::Zone(int id, int population, double x, double y, double l, double h)
@@ -15,11 +20,13 @@ Zone::Zone(int id, int population, double x, double y, double l, double h)
     this->densite = (surface > 0) ? (population / surface) : 0;
 }
 
+// ==================== CRUD ====================
 bool Zone::ajouter()
 {
     QSqlQuery query;
     query.prepare("INSERT INTO GZONE (ID_ZONE, POPULATION, X, Y, L, H, SURFACE, DENSITE) "
                   "VALUES (:id_zone, :population, :x, :y, :l, :h, :surface, :densite)");
+
     query.bindValue(":id_zone", id_zone);
     query.bindValue(":population", population);
     query.bindValue(":x", x);
@@ -65,6 +72,7 @@ bool Zone::modifier(int id)
     QSqlQuery query;
     query.prepare("UPDATE GZONE SET POPULATION=:population, X=:x, Y=:y, L=:l, H=:h, "
                   "SURFACE=:surface, DENSITE=:densite WHERE ID_ZONE=:id_zone");
+
     query.bindValue(":population", population);
     query.bindValue(":x", x);
     query.bindValue(":y", y);
@@ -74,5 +82,26 @@ bool Zone::modifier(int id)
     query.bindValue(":densite", densite);
     query.bindValue(":id_zone", id);
 
-    return query.exec();
+    if(query.exec()) {
+        qDebug() << "✅ Zone modifiée";
+        return true;
+    } else {
+        qDebug() << "❌ Erreur modification zone:" << query.lastError().text();
+        return false;
+    }
+}
+
+// ==================== Sorting ====================
+QSqlQueryModel* Zone::trier(int index)
+{
+    QSqlQueryModel* model = new QSqlQueryModel();
+    QString queryStr;
+
+    if(index == 0)       // sort by ID_ZONE
+        queryStr = "SELECT * FROM GZONE ORDER BY ID_ZONE";
+    else if(index == 1)  // sort by POPULATION
+        queryStr = "SELECT * FROM GZONE ORDER BY POPULATION";
+
+    model->setQuery(queryStr);
+    return model;
 }

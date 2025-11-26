@@ -1,4 +1,5 @@
 debug/connection.o
+debug/graph.o
 debug/habitantcrud.o
 debug/main.o
 debug/mainwindow.o
@@ -9,4 +10,5 @@ debug/demandecrud.o
 debug/satisfaction.o
 debug/zone.o
 debug/affectationp.o
+debug/moc_graph.o
 debug/moc_mainwindow.o

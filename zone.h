@@ -16,6 +16,8 @@ public:
     bool ajouter();          // Create
     bool supprimer(int id);  // Delete
     QSqlQueryModel* afficher(); // Read / Display all zones
+    QSqlQueryModel* trier(int index);
+
 
 private:
     int id_zone;

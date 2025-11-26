@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     connection.cpp \
+    graph.cpp \
     habitantcrud.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 
 HEADERS += \
     connection.h \
+    graph.h \
     habitantcrud.h \
     mainwindow.h \
     personnel.h \

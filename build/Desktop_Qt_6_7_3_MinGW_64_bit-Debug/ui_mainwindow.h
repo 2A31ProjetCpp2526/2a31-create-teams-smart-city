@@ -13,6 +13,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QFrame>
+#include <QtWidgets/QGraphicsView>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
@@ -254,24 +255,25 @@ public:
     QLabel *label_12;
     QLabel *label_13;
     QLineEdit *cap;
-    QLineEdit *status;
     QPushButton *ajpoub;
+    QComboBox *status;
     QPushButton *modpoub;
-    QComboBox *comboBox_4;
     QPushButton *supppoub;
-    QPushButton *gespub_4;
+    QPushButton *tri_2;
     QLabel *label_22;
-    QComboBox *comboBox;
-    QLineEdit *lineEdit_10;
     QLabel *label_23;
-    QPushButton *gespub_3;
-    QPushButton *gespub_7;
-    QLineEdit *lineEdit_11;
+    QPushButton *exp_2;
+    QLineEdit *filenamep;
     QFrame *line_4;
     QFrame *line_5;
     QFrame *line_6;
     QTableWidget *twp;
     QPushButton *affpoub;
+    QPushButton *statisticpoubelles;
+    QComboBox *typeexp_2;
+    QComboBox *cbt;
+    QLineEdit *searchp;
+    QPushButton *searchpp;
     QWidget *page;
     QFrame *frame_2;
     QLabel *label_28;
@@ -291,18 +293,23 @@ public:
     QLabel *label_94;
     QFrame *line_8;
     QTableWidget *twz;
-    QPushButton *gespub_9;
-    QPushButton *gespub_11;
+    QPushButton *tri;
+    QPushButton *exp;
     QLabel *label_25;
-    QComboBox *comboBox_6;
+    QComboBox *tris;
     QLabel *label_26;
     QPushButton *suppzone;
-    QComboBox *comboBox_9;
+    QComboBox *typeexp;
     QPushButton *modzone;
-    QLineEdit *lineEdit_43;
-    QLineEdit *lineEdit_44;
-    QPushButton *gespub_14;
+    QLineEdit *nameexp;
+    QLineEdit *searchz;
+    QPushButton *searchzone;
     QPushButton *affzone;
+    QPushButton *btnLoadMap;
+    QLabel *label_38;
+    QGraphicsView *graphicsZones_2;
+    QGraphicsView *graphicsBins_2;
+    QLabel *label_133;
     QWidget *page_5;
     QFrame *line_9;
     QWidget *zzzz;
@@ -3513,24 +3520,6 @@ public:
 "    selection-background-color: #0d3273;\n"
 "    selection-color: #ffffff;\n"
 "}"));
-        status = new QLineEdit(frame);
-        status->setObjectName("status");
-        status->setGeometry(QRect(60, 390, 271, 31));
-        status->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
-"    background-color: #e6f7ff;      /* Light blue background */\n"
-"    border: 1px solid #003366;      /* Dark blue border */\n"
-"    border-radius: 8px;             /* Rounded corners */\n"
-"    padding: 6px 10px;              /* Inner spacing */\n"
-"    font-size: 14px;\n"
-"    color: #003366;\n"
-"}\n"
-"\n"
-"QLineEdit:focus {\n"
-"    border: 1px solid #0d3273;      /* Darker border on focus */\n"
-"    background-color: #ffffff;      /* Slightly lighter background */\n"
-"    selection-background-color: #0d3273;\n"
-"    selection-color: #ffffff;\n"
-"}"));
         ajpoub = new QPushButton(frame);
         ajpoub->setObjectName("ajpoub");
         ajpoub->setGeometry(QRect(260, 10, 101, 31));
@@ -3555,6 +3544,51 @@ public:
 "QPushButton:pressed {\n"
 "    background-color: #013869;\n"
 "    border-color: #011f3f;\n"
+"}\n"
+""));
+        status = new QComboBox(frame);
+        status->addItem(QString());
+        status->addItem(QString());
+        status->addItem(QString());
+        status->setObjectName("status");
+        status->setGeometry(QRect(60, 390, 271, 31));
+        status->setStyleSheet(QString::fromUtf8("QComboBox {\n"
+"    background-color: #e6f7ff;      /* Light blue background */\n"
+"    border: 1px solid #003366;      /* Dark blue border */\n"
+"    border-radius: 6px;\n"
+"    padding: 4px 10px;\n"
+"    font-size: 14px;\n"
+"    color: #000000;\n"
+"}\n"
+"\n"
+"QComboBox:hover {\n"
+"    border: 1px solid #0d3273;   \n"
+"    color: #000000;\n"
+"   /* Darker border on hover */\n"
+"}\n"
+"\n"
+"QComboBox:focus {\n"
+"    border: 1px solid #0d3273;\n"
+"    background-color: #ffffff;\n"
+"}\n"
+"\n"
+"QComboBox::drop-down {\n"
+"    color: #000000;\n"
+"\n"
+"    subcontrol-origin: padding;\n"
+"    subcontrol-position: top right;\n"
+"    width: 25px;\n"
+"    border-left: 1px solid #003366;\n"
+"    border-radius: 0 6px 6px 0;\n"
+"}\n"
+"\n"
+"QComboBox QAbstractItemView {\n"
+"    color: #000000;\n"
+"\n"
+"    background-color: #ffffff;\n"
+"    selection-background-color: #0d3273;\n"
+"    selection-color: white;\n"
+"    border: 1px solid #003366;\n"
 "}\n"
 ""));
         modpoub = new QPushButton(pageMain);
@@ -3583,44 +3617,6 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-        comboBox_4 = new QComboBox(pageMain);
-        comboBox_4->addItem(QString());
-        comboBox_4->addItem(QString());
-        comboBox_4->setObjectName("comboBox_4");
-        comboBox_4->setGeometry(QRect(550, 540, 101, 24));
-        comboBox_4->setStyleSheet(QString::fromUtf8("QComboBox {\n"
-"    background-color: #e6f7ff;      /* Light blue background */\n"
-"    border: 1px solid #003366;      /* Dark blue border */\n"
-"    border-radius: 6px;\n"
-"    padding: 4px 10px;\n"
-"    font-size: 14px;\n"
-"    color: #003366;\n"
-"}\n"
-"\n"
-"QComboBox:hover {\n"
-"    border: 1px solid #0d3273;      /* Darker border on hover */\n"
-"}\n"
-"\n"
-"QComboBox:focus {\n"
-"    border: 1px solid #0d3273;\n"
-"    background-color: #ffffff;\n"
-"}\n"
-"\n"
-"QComboBox::drop-down {\n"
-"    subcontrol-origin: padding;\n"
-"    subcontrol-position: top right;\n"
-"    width: 25px;\n"
-"    border-left: 1px solid #003366;\n"
-"    border-radius: 0 6px 6px 0;\n"
-"}\n"
-"\n"
-"QComboBox QAbstractItemView {\n"
-"    background-color: #ffffff;\n"
-"    selection-background-color: #0d3273;\n"
-"    selection-color: white;\n"
-"    border: 1px solid #003366;\n"
-"}\n"
-""));
         supppoub = new QPushButton(pageMain);
         supppoub->setObjectName("supppoub");
         supppoub->setGeometry(QRect(720, 420, 101, 31));
@@ -3647,10 +3643,10 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-        gespub_4 = new QPushButton(pageMain);
-        gespub_4->setObjectName("gespub_4");
-        gespub_4->setGeometry(QRect(680, 490, 81, 31));
-        gespub_4->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        tri_2 = new QPushButton(pageMain);
+        tri_2->setObjectName("tri_2");
+        tri_2->setGeometry(QRect(680, 490, 81, 31));
+        tri_2->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -3677,70 +3673,13 @@ public:
         label_22->setObjectName("label_22");
         label_22->setGeometry(QRect(470, 490, 61, 21));
         label_22->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        comboBox = new QComboBox(pageMain);
-        comboBox->addItem(QString());
-        comboBox->addItem(QString());
-        comboBox->addItem(QString());
-        comboBox->setObjectName("comboBox");
-        comboBox->setGeometry(QRect(550, 490, 101, 24));
-        comboBox->setStyleSheet(QString::fromUtf8("QComboBox {\n"
-"    background-color: #e6f7ff;      /* Light blue background */\n"
-"    border: 1px solid #003366;      /* Dark blue border */\n"
-"    border-radius: 6px;\n"
-"    padding: 4px 10px;\n"
-"    font-size: 14px;\n"
-"    color: #003366;\n"
-"}\n"
-"\n"
-"QComboBox:hover {\n"
-"    border: 1px solid #0d3273;      /* Darker border on hover */\n"
-"}\n"
-"\n"
-"QComboBox:focus {\n"
-"    border: 1px solid #0d3273;\n"
-"    background-color: #ffffff;\n"
-"}\n"
-"\n"
-"QComboBox::drop-down {\n"
-"    subcontrol-origin: padding;\n"
-"    subcontrol-position: top right;\n"
-"    width: 25px;\n"
-"    border-left: 1px solid #003366;\n"
-"    border-radius: 0 6px 6px 0;\n"
-"}\n"
-"\n"
-"QComboBox QAbstractItemView {\n"
-"    background-color: #ffffff;\n"
-"    selection-background-color: #0d3273;\n"
-"    selection-color: white;\n"
-"    border: 1px solid #003366;\n"
-"}\n"
-""));
-        lineEdit_10 = new QLineEdit(pageMain);
-        lineEdit_10->setObjectName("lineEdit_10");
-        lineEdit_10->setGeometry(QRect(460, 100, 271, 31));
-        lineEdit_10->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
-"    background-color: #ffffff;       /* White background */\n"
-"    border: 1px solid #003366;       /* Dark blue border */\n"
-"    border-radius: 6px;              /* Rounded corners */\n"
-"    padding: 5px 10px;               /* Inner padding */\n"
-"    font-size: 14px;\n"
-"    color: #003366;\n"
-"}\n"
-"\n"
-"QLineEdit:focus {\n"
-"    border: 1px solid #0d3273;       /* Darker border on focus */\n"
-"    background-color: #e6f7ff;       /* Light blue on focus */\n"
-"    selection-background-color: #0d3273;\n"
-"    selection-color: white;\n"
-"}"));
         label_23 = new QLabel(pageMain);
         label_23->setObjectName("label_23");
         label_23->setGeometry(QRect(430, 690, 301, 31));
-        gespub_3 = new QPushButton(pageMain);
-        gespub_3->setObjectName("gespub_3");
-        gespub_3->setGeometry(QRect(770, 100, 101, 31));
-        gespub_3->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        exp_2 = new QPushButton(pageMain);
+        exp_2->setObjectName("exp_2");
+        exp_2->setGeometry(QRect(830, 540, 91, 31));
+        exp_2->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -3763,36 +3702,10 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-        gespub_7 = new QPushButton(pageMain);
-        gespub_7->setObjectName("gespub_7");
-        gespub_7->setGeometry(QRect(830, 540, 91, 31));
-        gespub_7->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
-"QPushButton {\n"
-"    background-color: #012a59;\n"
-"    color: #ffffff;\n"
-"    border: 2px solid #013366;\n"
-"    border-radius: 10px;\n"
-"    padding: 8px 14px;\n"
-"    font-size: 13px;\n"
-"    font-weight: 500;\n"
-"    text-align: left;\n"
-"    transition: all 0.3s ease-in-out;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: #024b8a;\n"
-"    border-color: #025aa5;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: #013869;\n"
-"    border-color: #011f3f;\n"
-"}\n"
-""));
-        lineEdit_11 = new QLineEdit(pageMain);
-        lineEdit_11->setObjectName("lineEdit_11");
-        lineEdit_11->setGeometry(QRect(680, 540, 131, 31));
-        lineEdit_11->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        filenamep = new QLineEdit(pageMain);
+        filenamep->setObjectName("filenamep");
+        filenamep->setGeometry(QRect(680, 540, 131, 31));
+        filenamep->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;       /* White background */\n"
 "    border: 1px solid #003366;       /* Dark blue border */\n"
 "    border-radius: 6px;              /* Rounded corners */\n"
@@ -3834,7 +3747,7 @@ public:
         QTableWidgetItem *__qtablewidgetitem25 = new QTableWidgetItem();
         twp->setHorizontalHeaderItem(3, __qtablewidgetitem25);
         twp->setObjectName("twp");
-        twp->setGeometry(QRect(540, 170, 401, 231));
+        twp->setGeometry(QRect(540, 170, 411, 231));
         twp->setStyleSheet(QString::fromUtf8("QTableWidget {\n"
 "    background-color: #ffffff;\n"
 "    alternate-background-color: #f2f6fc;\n"
@@ -3884,8 +3797,166 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
+        statisticpoubelles = new QPushButton(pageMain);
+        statisticpoubelles->setObjectName("statisticpoubelles");
+        statisticpoubelles->setGeometry(QRect(930, 100, 90, 31));
+        statisticpoubelles->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+"QPushButton {\n"
+"    background-color: #012a59;\n"
+"    color: #ffffff;\n"
+"    border: 2px solid #013366;\n"
+"    border-radius: 10px;\n"
+"    padding: 8px 14px;\n"
+"    font-size: 13px;\n"
+"    font-weight: 500;\n"
+"    text-align: left;\n"
+"    transition: all 0.3s ease-in-out;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #024b8a;\n"
+"    border-color: #025aa5;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: #013869;\n"
+"    border-color: #011f3f;\n"
+"}\n"
+""));
+        typeexp_2 = new QComboBox(pageMain);
+        typeexp_2->addItem(QString());
+        typeexp_2->addItem(QString());
+        typeexp_2->setObjectName("typeexp_2");
+        typeexp_2->setGeometry(QRect(550, 540, 101, 24));
+        typeexp_2->setStyleSheet(QString::fromUtf8("QComboBox {\n"
+"    background-color: #e6f7ff;      /* Light blue background */\n"
+"    border: 1px solid #003366;      /* Dark blue border */\n"
+"    border-radius: 6px;\n"
+"    padding: 4px 10px;\n"
+"    font-size: 14px;\n"
+"    color: #000000;\n"
+"}\n"
+"\n"
+"QComboBox:hover {\n"
+"    border: 1px solid #0d3273;   \n"
+"    color: #000000;\n"
+"   /* Darker border on hover */\n"
+"}\n"
+"\n"
+"QComboBox:focus {\n"
+"    border: 1px solid #0d3273;\n"
+"    background-color: #ffffff;\n"
+"}\n"
+"\n"
+"QComboBox::drop-down {\n"
+"    color: #000000;\n"
+"\n"
+"    subcontrol-origin: padding;\n"
+"    subcontrol-position: top right;\n"
+"    width: 25px;\n"
+"    border-left: 1px solid #003366;\n"
+"    border-radius: 0 6px 6px 0;\n"
+"}\n"
+"\n"
+"QComboBox QAbstractItemView {\n"
+"    color: #000000;\n"
+"\n"
+"    background-color: #ffffff;\n"
+"    selection-background-color: #0d3273;\n"
+"    selection-color: white;\n"
+"    border: 1px solid #003366;\n"
+"}\n"
+""));
+        cbt = new QComboBox(pageMain);
+        cbt->addItem(QString());
+        cbt->addItem(QString());
+        cbt->addItem(QString());
+        cbt->setObjectName("cbt");
+        cbt->setGeometry(QRect(550, 490, 101, 24));
+        cbt->setStyleSheet(QString::fromUtf8("QComboBox {\n"
+"    background-color: #e6f7ff;      /* Light blue background */\n"
+"    border: 1px solid #003366;      /* Dark blue border */\n"
+"    border-radius: 6px;\n"
+"    padding: 4px 10px;\n"
+"    font-size: 14px;\n"
+"    color: #000000;\n"
+"}\n"
+"\n"
+"QComboBox:hover {\n"
+"    border: 1px solid #0d3273;   \n"
+"    color: #000000;\n"
+"   /* Darker border on hover */\n"
+"}\n"
+"\n"
+"QComboBox:focus {\n"
+"    border: 1px solid #0d3273;\n"
+"    background-color: #ffffff;\n"
+"}\n"
+"\n"
+"QComboBox::drop-down {\n"
+"    color: #000000;\n"
+"\n"
+"    subcontrol-origin: padding;\n"
+"    subcontrol-position: top right;\n"
+"    width: 25px;\n"
+"    border-left: 1px solid #003366;\n"
+"    border-radius: 0 6px 6px 0;\n"
+"}\n"
+"\n"
+"QComboBox QAbstractItemView {\n"
+"    color: #000000;\n"
+"\n"
+"    background-color: #ffffff;\n"
+"    selection-background-color: #0d3273;\n"
+"    selection-color: white;\n"
+"    border: 1px solid #003366;\n"
+"}\n"
+""));
+        searchp = new QLineEdit(pageMain);
+        searchp->setObjectName("searchp");
+        searchp->setGeometry(QRect(460, 90, 271, 31));
+        searchp->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+"    background-color: #ffffff;       /* White background */\n"
+"    border: 1px solid #003366;       /* Dark blue border */\n"
+"    border-radius: 6px;              /* Rounded corners */\n"
+"    padding: 5px 10px;               /* Inner padding */\n"
+"    font-size: 14px;\n"
+"    color: #003366;\n"
+"}\n"
+"\n"
+"QLineEdit:focus {\n"
+"    border: 1px solid #0d3273;       /* Darker border on focus */\n"
+"    background-color: #e6f7ff;       /* Light blue on focus */\n"
+"    selection-background-color: #0d3273;\n"
+"    selection-color: white;\n"
+"}"));
+        searchpp = new QPushButton(pageMain);
+        searchpp->setObjectName("searchpp");
+        searchpp->setGeometry(QRect(750, 90, 121, 31));
+        searchpp->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+"QPushButton {\n"
+"    background-color: #012a59;\n"
+"    color: #ffffff;\n"
+"    border: 2px solid #013366;\n"
+"    border-radius: 10px;\n"
+"    padding: 8px 14px;\n"
+"    font-size: 13px;\n"
+"    font-weight: 500;\n"
+"    text-align: left;\n"
+"    transition: all 0.3s ease-in-out;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #024b8a;\n"
+"    border-color: #025aa5;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: #013869;\n"
+"    border-color: #011f3f;\n"
+"}\n"
+""));
         stackedWidget_3->addWidget(pageMain);
-        comboBox_4->raise();
         label_23->raise();
         line_5->raise();
         line_6->raise();
@@ -3893,16 +3964,18 @@ public:
         frame->raise();
         modpoub->raise();
         supppoub->raise();
-        gespub_4->raise();
-        comboBox->raise();
-        lineEdit_10->raise();
+        tri_2->raise();
         label_22->raise();
-        gespub_3->raise();
-        gespub_7->raise();
-        lineEdit_11->raise();
+        exp_2->raise();
+        filenamep->raise();
         line_4->raise();
         twp->raise();
         affpoub->raise();
+        statisticpoubelles->raise();
+        typeexp_2->raise();
+        cbt->raise();
+        searchp->raise();
+        searchpp->raise();
         page = new QWidget();
         page->setObjectName("page");
         frame_2 = new QFrame(page);
@@ -4205,7 +4278,7 @@ public:
         QTableWidgetItem *__qtablewidgetitem33 = new QTableWidgetItem();
         twz->setHorizontalHeaderItem(7, __qtablewidgetitem33);
         twz->setObjectName("twz");
-        twz->setGeometry(QRect(440, 150, 721, 161));
+        twz->setGeometry(QRect(440, 80, 721, 161));
         twz->setStyleSheet(QString::fromUtf8("QTableWidget {\n"
 "    background-color: #ffffff;\n"
 "    alternate-background-color: #f2f6fc;\n"
@@ -4229,10 +4302,10 @@ public:
 "QTableCornerButton::section {\n"
 "    background-color: #0c2d57;\n"
 "}"));
-        gespub_9 = new QPushButton(page);
-        gespub_9->setObjectName("gespub_9");
-        gespub_9->setGeometry(QRect(670, 360, 81, 31));
-        gespub_9->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        tri = new QPushButton(page);
+        tri->setObjectName("tri");
+        tri->setGeometry(QRect(660, 270, 81, 31));
+        tri->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -4255,10 +4328,10 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-        gespub_11 = new QPushButton(page);
-        gespub_11->setObjectName("gespub_11");
-        gespub_11->setGeometry(QRect(800, 440, 91, 31));
-        gespub_11->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        exp = new QPushButton(page);
+        exp->setObjectName("exp");
+        exp->setGeometry(QRect(800, 320, 91, 31));
+        exp->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -4283,20 +4356,20 @@ public:
 ""));
         label_25 = new QLabel(page);
         label_25->setObjectName("label_25");
-        label_25->setGeometry(QRect(450, 440, 71, 21));
+        label_25->setGeometry(QRect(450, 320, 71, 21));
         label_25->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        comboBox_6 = new QComboBox(page);
-        comboBox_6->addItem(QString());
-        comboBox_6->addItem(QString());
-        comboBox_6->setObjectName("comboBox_6");
-        comboBox_6->setGeometry(QRect(540, 360, 101, 24));
-        comboBox_6->setStyleSheet(QString::fromUtf8("QComboBox {\n"
+        tris = new QComboBox(page);
+        tris->addItem(QString());
+        tris->addItem(QString());
+        tris->setObjectName("tris");
+        tris->setGeometry(QRect(530, 270, 101, 24));
+        tris->setStyleSheet(QString::fromUtf8("QComboBox {\n"
 "    background-color: #e6f7ff;      /* Light blue background */\n"
 "    border: 1px solid #003366;      /* Dark blue border */\n"
 "    border-radius: 6px;\n"
 "    padding: 4px 10px;\n"
 "    font-size: 14px;\n"
-"    color: #003366;\n"
+"    color: #000000;\n"
 "}\n"
 "\n"
 "QComboBox:hover {\n"
@@ -4325,11 +4398,11 @@ public:
 ""));
         label_26 = new QLabel(page);
         label_26->setObjectName("label_26");
-        label_26->setGeometry(QRect(460, 360, 61, 21));
+        label_26->setGeometry(QRect(450, 270, 61, 21));
         label_26->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
         suppzone = new QPushButton(page);
         suppzone->setObjectName("suppzone");
-        suppzone->setGeometry(QRect(870, 360, 101, 31));
+        suppzone->setGeometry(QRect(880, 270, 101, 31));
         suppzone->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
@@ -4353,18 +4426,18 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-        comboBox_9 = new QComboBox(page);
-        comboBox_9->addItem(QString());
-        comboBox_9->addItem(QString());
-        comboBox_9->setObjectName("comboBox_9");
-        comboBox_9->setGeometry(QRect(530, 440, 101, 24));
-        comboBox_9->setStyleSheet(QString::fromUtf8("QComboBox {\n"
+        typeexp = new QComboBox(page);
+        typeexp->addItem(QString());
+        typeexp->addItem(QString());
+        typeexp->setObjectName("typeexp");
+        typeexp->setGeometry(QRect(530, 320, 101, 24));
+        typeexp->setStyleSheet(QString::fromUtf8("QComboBox {\n"
 "    background-color: #e6f7ff;      /* Light blue background */\n"
 "    border: 1px solid #003366;      /* Dark blue border */\n"
 "    border-radius: 6px;\n"
 "    padding: 4px 10px;\n"
 "    font-size: 14px;\n"
-"    color: #003366;\n"
+"    color: #000000;\n"
 "}\n"
 "\n"
 "QComboBox:hover {\n"
@@ -4393,7 +4466,7 @@ public:
 ""));
         modzone = new QPushButton(page);
         modzone->setObjectName("modzone");
-        modzone->setGeometry(QRect(770, 360, 91, 31));
+        modzone->setGeometry(QRect(770, 270, 91, 31));
         modzone->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
@@ -4417,10 +4490,10 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-        lineEdit_43 = new QLineEdit(page);
-        lineEdit_43->setObjectName("lineEdit_43");
-        lineEdit_43->setGeometry(QRect(650, 440, 131, 31));
-        lineEdit_43->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        nameexp = new QLineEdit(page);
+        nameexp->setObjectName("nameexp");
+        nameexp->setGeometry(QRect(650, 320, 131, 31));
+        nameexp->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;       /* White background */\n"
 "    border: 1px solid #003366;       /* Dark blue border */\n"
 "    border-radius: 6px;              /* Rounded corners */\n"
@@ -4435,10 +4508,10 @@ public:
 "    selection-background-color: #0d3273;\n"
 "    selection-color: white;\n"
 "}"));
-        lineEdit_44 = new QLineEdit(page);
-        lineEdit_44->setObjectName("lineEdit_44");
-        lineEdit_44->setGeometry(QRect(460, 70, 271, 31));
-        lineEdit_44->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        searchz = new QLineEdit(page);
+        searchz->setObjectName("searchz");
+        searchz->setGeometry(QRect(450, 30, 271, 31));
+        searchz->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;       /* White background */\n"
 "    border: 1px solid #003366;       /* Dark blue border */\n"
 "    border-radius: 6px;              /* Rounded corners */\n"
@@ -4453,10 +4526,10 @@ public:
 "    selection-background-color: #0d3273;\n"
 "    selection-color: white;\n"
 "}"));
-        gespub_14 = new QPushButton(page);
-        gespub_14->setObjectName("gespub_14");
-        gespub_14->setGeometry(QRect(750, 70, 111, 31));
-        gespub_14->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        searchzone = new QPushButton(page);
+        searchzone->setObjectName("searchzone");
+        searchzone->setGeometry(QRect(750, 30, 111, 31));
+        searchzone->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -4481,7 +4554,7 @@ public:
 ""));
         affzone = new QPushButton(page);
         affzone->setObjectName("affzone");
-        affzone->setGeometry(QRect(990, 360, 91, 31));
+        affzone->setGeometry(QRect(1000, 270, 91, 31));
         affzone->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
@@ -4505,6 +4578,47 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
+        btnLoadMap = new QPushButton(page);
+        btnLoadMap->setObjectName("btnLoadMap");
+        btnLoadMap->setGeometry(QRect(570, 360, 71, 31));
+        btnLoadMap->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+"QPushButton {\n"
+"    background-color: #012a59;\n"
+"    color: #ffffff;\n"
+"    border: 2px solid #013366;\n"
+"    border-radius: 10px;\n"
+"    padding: 8px 14px;\n"
+"    font-size: 13px;\n"
+"    font-weight: 500;\n"
+"    text-align: left;\n"
+"    transition: all 0.3s ease-in-out;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #024b8a;\n"
+"    border-color: #025aa5;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: #013869;\n"
+"    border-color: #011f3f;\n"
+"}\n"
+""));
+        label_38 = new QLabel(page);
+        label_38->setObjectName("label_38");
+        label_38->setGeometry(QRect(450, 370, 111, 21));
+        label_38->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+        graphicsZones_2 = new QGraphicsView(page);
+        graphicsZones_2->setObjectName("graphicsZones_2");
+        graphicsZones_2->setGeometry(QRect(430, 400, 351, 281));
+        graphicsBins_2 = new QGraphicsView(page);
+        graphicsBins_2->setObjectName("graphicsBins_2");
+        graphicsBins_2->setGeometry(QRect(790, 400, 391, 211));
+        label_133 = new QLabel(page);
+        label_133->setObjectName("label_133");
+        label_133->setGeometry(QRect(790, 370, 221, 20));
+        label_133->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);\n"
+"font: 12pt \"Segoe UI\";"));
         stackedWidget_3->addWidget(page);
         page_5 = new QWidget();
         page_5->setObjectName("page_5");
@@ -5841,7 +5955,7 @@ public:
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");
-        menubar->setGeometry(QRect(0, 0, 1446, 26));
+        menubar->setGeometry(QRect(0, 0, 1446, 21));
         MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName("statusbar");
@@ -6081,25 +6195,19 @@ public:
 "", nullptr));
         label_13->setText(QCoreApplication::translate("MainWindow", "Statut :\n"
 "", nullptr));
-        status->setText(QCoreApplication::translate("MainWindow", "Vide / Plein", nullptr));
         ajpoub->setText(QCoreApplication::translate("MainWindow", "  AJOUTER", nullptr));
+        status->setItemText(0, QCoreApplication::translate("MainWindow", "Vide", nullptr));
+        status->setItemText(1, QCoreApplication::translate("MainWindow", "Plein", nullptr));
+        status->setItemText(2, QCoreApplication::translate("MainWindow", "Broken", nullptr));
+
         modpoub->setText(QCoreApplication::translate("MainWindow", "MODIFIER", nullptr));
-        comboBox_4->setItemText(0, QCoreApplication::translate("MainWindow", "PDF", nullptr));
-        comboBox_4->setItemText(1, QCoreApplication::translate("MainWindow", "EXCEL", nullptr));
-
         supppoub->setText(QCoreApplication::translate("MainWindow", "SUPPRIMER", nullptr));
-        gespub_4->setText(QCoreApplication::translate("MainWindow", "    TRI", nullptr));
+        tri_2->setText(QCoreApplication::translate("MainWindow", "    TRI", nullptr));
         label_22->setText(QCoreApplication::translate("MainWindow", "TRI :", nullptr));
-        comboBox->setItemText(0, QCoreApplication::translate("MainWindow", "ID", nullptr));
-        comboBox->setItemText(1, QCoreApplication::translate("MainWindow", "CAPACITY", nullptr));
-        comboBox->setItemText(2, QCoreApplication::translate("MainWindow", "STATUS", nullptr));
-
-        lineEdit_10->setText(QCoreApplication::translate("MainWindow", "Recherche Par ID de Poubelle :", nullptr));
         label_23->setText(QCoreApplication::translate("MainWindow", "Bin suggestion is automatically calculated.\n"
 "", nullptr));
-        gespub_3->setText(QCoreApplication::translate("MainWindow", " Recherche", nullptr));
-        gespub_7->setText(QCoreApplication::translate("MainWindow", "  EXPORT", nullptr));
-        lineEdit_11->setText(QCoreApplication::translate("MainWindow", "Nom Du Fichier :", nullptr));
+        exp_2->setText(QCoreApplication::translate("MainWindow", "  EXPORT", nullptr));
+        filenamep->setText(QCoreApplication::translate("MainWindow", "Nom Du Fichier :", nullptr));
         QTableWidgetItem *___qtablewidgetitem22 = twp->horizontalHeaderItem(0);
         ___qtablewidgetitem22->setText(QCoreApplication::translate("MainWindow", "PUB ID ", nullptr));
         QTableWidgetItem *___qtablewidgetitem23 = twp->horizontalHeaderItem(1);
@@ -6109,6 +6217,16 @@ public:
         QTableWidgetItem *___qtablewidgetitem25 = twp->horizontalHeaderItem(3);
         ___qtablewidgetitem25->setText(QCoreApplication::translate("MainWindow", "STATUT", nullptr));
         affpoub->setText(QCoreApplication::translate("MainWindow", " AFFICHER", nullptr));
+        statisticpoubelles->setText(QCoreApplication::translate("MainWindow", "    Stat", nullptr));
+        typeexp_2->setItemText(0, QCoreApplication::translate("MainWindow", "PDF", nullptr));
+        typeexp_2->setItemText(1, QCoreApplication::translate("MainWindow", "EXCEL", nullptr));
+
+        cbt->setItemText(0, QCoreApplication::translate("MainWindow", "ID", nullptr));
+        cbt->setItemText(1, QCoreApplication::translate("MainWindow", "CAPACITY", nullptr));
+        cbt->setItemText(2, QCoreApplication::translate("MainWindow", "STATUS", nullptr));
+
+        searchp->setText(QCoreApplication::translate("MainWindow", "Recherche Par ID de Poubelle :", nullptr));
+        searchpp->setText(QCoreApplication::translate("MainWindow", "      Search", nullptr));
         label_28->setText(QCoreApplication::translate("MainWindow", "Gestion Des Zones\n"
 "", nullptr));
         label_29->setText(QCoreApplication::translate("MainWindow", "ZONE ID :", nullptr));
@@ -6138,22 +6256,25 @@ public:
         ___qtablewidgetitem32->setText(QCoreApplication::translate("MainWindow", "SURFACE", nullptr));
         QTableWidgetItem *___qtablewidgetitem33 = twz->horizontalHeaderItem(7);
         ___qtablewidgetitem33->setText(QCoreApplication::translate("MainWindow", "DENSITEE", nullptr));
-        gespub_9->setText(QCoreApplication::translate("MainWindow", "    TRI", nullptr));
-        gespub_11->setText(QCoreApplication::translate("MainWindow", "  EXPORT", nullptr));
+        tri->setText(QCoreApplication::translate("MainWindow", "    TRI", nullptr));
+        exp->setText(QCoreApplication::translate("MainWindow", "  EXPORT", nullptr));
         label_25->setText(QCoreApplication::translate("MainWindow", "EXPORTER ", nullptr));
-        comboBox_6->setItemText(0, QCoreApplication::translate("MainWindow", "ID", nullptr));
-        comboBox_6->setItemText(1, QCoreApplication::translate("MainWindow", "POPULATION", nullptr));
+        tris->setItemText(0, QCoreApplication::translate("MainWindow", "ID", nullptr));
+        tris->setItemText(1, QCoreApplication::translate("MainWindow", "POPULATION", nullptr));
 
         label_26->setText(QCoreApplication::translate("MainWindow", "TRI PAR :", nullptr));
         suppzone->setText(QCoreApplication::translate("MainWindow", "SUPPRIMER", nullptr));
-        comboBox_9->setItemText(0, QCoreApplication::translate("MainWindow", "PDF", nullptr));
-        comboBox_9->setItemText(1, QCoreApplication::translate("MainWindow", "EXCEL", nullptr));
+        typeexp->setItemText(0, QCoreApplication::translate("MainWindow", "PDF", nullptr));
+        typeexp->setItemText(1, QCoreApplication::translate("MainWindow", "EXCEL", nullptr));
 
         modzone->setText(QCoreApplication::translate("MainWindow", "MODIFIER", nullptr));
-        lineEdit_43->setText(QCoreApplication::translate("MainWindow", "Nom Du Fichier :", nullptr));
-        lineEdit_44->setText(QCoreApplication::translate("MainWindow", "Recherche par Zone ID : ", nullptr));
-        gespub_14->setText(QCoreApplication::translate("MainWindow", "    SEARCH", nullptr));
+        nameexp->setText(QCoreApplication::translate("MainWindow", "Nom Du Fichier :", nullptr));
+        searchz->setText(QCoreApplication::translate("MainWindow", "Recherche par Zone ID : ", nullptr));
+        searchzone->setText(QCoreApplication::translate("MainWindow", "    SEARCH", nullptr));
         affzone->setText(QCoreApplication::translate("MainWindow", "AFFICHER", nullptr));
+        btnLoadMap->setText(QCoreApplication::translate("MainWindow", "Graph", nullptr));
+        label_38->setText(QCoreApplication::translate("MainWindow", "AFFICHER GRAPH", nullptr));
+        label_133->setText(QCoreApplication::translate("MainWindow", "Bins Graph (by capacity)", nullptr));
         gespub_2->setText(QCoreApplication::translate("MainWindow", "     Gestion Poubelles", nullptr));
         geszone1->setText(QCoreApplication::translate("MainWindow", "        Gestion Zone", nullptr));
         label_27->setText(QCoreApplication::translate("MainWindow", "60,000 m\302\262	", nullptr));

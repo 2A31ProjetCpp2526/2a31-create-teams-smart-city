@@ -1,4 +1,5 @@
 release/connection.o
+release/graph.o
 release/habitantcrud.o
 release/main.o
 release/mainwindow.o
@@ -9,4 +10,5 @@ release/demandecrud.o
 release/satisfaction.o
 release/zone.o
 release/affectationp.o
+release/moc_graph.o
 release/moc_mainwindow.o

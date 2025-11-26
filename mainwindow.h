@@ -18,7 +18,7 @@
 #include "poubelle.h"
 #include "habitantcrud.h"
 #include "vehiculecrud.h"
-
+#include "graph.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -30,11 +30,12 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    void refreshGraph();
+    void renderBinsGraph(int zoneId);
     void setupTable();
-
 private slots:
     // Navigation buttons
+    void setupGraph();
     void on_pushButton_clicked();
     void on_pushButton2_clicked();
     void on_pushButton3_clicked();
@@ -72,14 +73,25 @@ private slots:
     void on_pushButton_30_clicked();
 
     // CRUD buttons
+    void on_searchpp_clicked();   // Search poubelle
+    void on_tri_2_clicked();      // Sort poubelle
+    void on_exp_2_clicked();
     void on_ajzone_clicked();
     void on_ajpoub_clicked();
+    void on_statisticpoubelles_clicked();
     void on_suppzone_clicked();
     void on_supppoub_clicked();
     void afficherZones();
     void afficherPoubelles();
     void modZone();   // Modify Zone
     void modPoubelle(); // Modify Poubelle
+    void on_twz_cellClicked(int row, int column);   // Table cell click
+    void on_twp_cellClicked(int row, int column);
+    void on_searchzone_clicked();      // Search zone
+    void on_exp_clicked();             // Export table
+    void on_tri_clicked();             // Sort table
+    void reloadBinsCache();
+
     // === CRUD HABITANTS ===
     void on_pushButton_ajoutH_clicked();
     void on_pushButton_modifH_clicked();
@@ -138,6 +150,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QLabel *binMessageLabel = nullptr;
     void chargerDonneesTable();
     void rechercherTexte(const QString &texte);
     // Validation des valeurs autorisées
@@ -164,7 +177,18 @@ private:
     void remplirTableSuivi();
     void filtrerUrgencesSuivi(bool urgencesSeulement);
     void updateSatisfactionKpi();
+    Graph *graphScene = nullptr;
+    QGraphicsScene *zonesScene = nullptr;
+    QGraphicsScene *binsScene = nullptr;
 
+    struct BinInfo {
+        int id = 0;
+        int zoneId = 0;
+        int cap = 0;
+        QString status;
+    };
+    QVector<BinInfo> binsCache;
+    int currentBinsZoneId = -1;
 };
 
 #endif // MAINWINDOW_H
