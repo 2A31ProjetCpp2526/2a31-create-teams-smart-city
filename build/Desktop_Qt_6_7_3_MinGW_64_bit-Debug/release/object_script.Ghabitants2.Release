@@ -1,7 +1,9 @@
 release/connection.o
+release/consomation.o
 release/graph.o
 release/habitantcrud.o
 release/main.o
+release/maintenance.o
 release/mainwindow.o
 release/personnel.o
 release/poubelle.o
@@ -11,4 +13,5 @@ release/satisfaction.o
 release/zone.o
 release/affectationp.o
 release/moc_graph.o
+release/moc_maintenance.o
 release/moc_mainwindow.o

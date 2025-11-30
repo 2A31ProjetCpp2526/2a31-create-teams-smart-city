@@ -23,7 +23,6 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
-#include <QtWidgets/QProgressBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QStackedWidget>
@@ -329,39 +328,30 @@ public:
     QWidget *page_13;
     QTableView *tableView_6;
     QLabel *label_58;
-    QLineEdit *lineEdit_18;
     QTableWidget *tableWidget;
     QLabel *label_3;
-    QTableWidget *tableWidget_8;
     QLabel *label_79;
     QLabel *label_80;
     QLabel *label_81;
-    QLabel *label_82;
-    QLabel *label_83;
-    QLabel *label_84;
-    QLineEdit *lineEdit_29;
-    QLineEdit *lineEdit_30;
-    QLineEdit *lineEdit_31;
-    QLineEdit *lineEdit_32;
-    QProgressBar *progressBar_3;
-    QLabel *label_85;
+    QLineEdit *lineMaint_id;
+    QLineEdit *lineMaint_matricule;
     QLabel *label_86;
-    QLineEdit *lineEdit_33;
-    QWidget *horizontalLayoutWidget_2;
-    QHBoxLayout *horizontalLayout_2;
-    QPushButton *pushButton_7;
-    QPushButton *pushButton_8;
-    QPushButton *pushButton_11;
-    QPushButton *pushButton_16;
+    QPushButton *btnMaint_effacer;
+    QPushButton *btnMaint_diagnostiquer;
+    QComboBox *comboMaint_type;
+    QPushButton *btnMaint_ajouter;
+    QTableView *tableMaint_history;
+    QLabel *label_85;
+    QLabel *textMaint_alertes;
+    QLabel *textMaint_diag;
     QWidget *page_11;
     QWidget *horizontalLayoutWidget_7;
     QHBoxLayout *horizontalLayout_7;
     QLineEdit *lineEdit_vehicule_recherche;
-    QPushButton *pushButton_13;
     QPushButton *btn_vehicule_rechercher;
     QLabel *label_49;
     QComboBox *comboBox_3;
-    QPushButton *pushButton_14;
+    QPushButton *btn_vehicule_tri;
     QWidget *horizontalLayoutWidget_8;
     QHBoxLayout *horizontalLayout_8;
     QPushButton *btn_vehicule_modifier;
@@ -370,13 +360,13 @@ public:
     QLabel *label_50;
     QLabel *label_51;
     QLabel *label_52;
-    QComboBox *comboBox_8;
-    QComboBox *comboBox_15;
+    QComboBox *comboBox_vehicule_format;
+    QComboBox *comboBox_vehicule_qualite;
     QLabel *label_53;
     QLabel *label_54;
     QLabel *label_55;
-    QLineEdit *lineEdit_14;
-    QLineEdit *lineEdit_15;
+    QLineEdit *nomV;
+    QLineEdit *emplacementV;
     QGroupBox *groupBox_2;
     QLabel *label_91;
     QLabel *label_92;
@@ -398,19 +388,23 @@ public:
     QLineEdit *lineEdit_vehicule_idhabitant;
     QComboBox *combo_vehicule_statut;
     QComboBox *combo_vehicule_type;
-    QPushButton *pushButton_12;
+    QPushButton *btn_vehicule_exporter;
     QTableView *tableView_vehicule;
     QWidget *page_12;
     QTableWidget *tableWidget_4;
     QLabel *label_56;
-    QLineEdit *lineEdit_16;
+    QLineEdit *lineIDVehicule;
     QLabel *label_57;
-    QComboBox *comboBox_16;
-    QLineEdit *lineEdit_17;
-    QPushButton *pushButton;
-    QTableWidget *tableWidget_5;
-    QPushButton *pushButton_2;
-    QPushButton *pushButton_3;
+    QPushButton *btnCalculerConso;
+    QPushButton *btn_effacer_conso;
+    QLineEdit *lineMatricule;
+    QLabel *label_60;
+    QLabel *label_61;
+    QLineEdit *lineDistance;
+    QLineEdit *lineConso;
+    QLabel *label_62;
+    QLabel *label_conso_resultat;
+    QTableView *tableViewConso;
     QLabel *label_24;
     QMenuBar *menubar;
     QStatusBar *statusbar;
@@ -594,7 +588,7 @@ public:
 ""));
         stackedWidget = new QStackedWidget(centralwidget);
         stackedWidget->setObjectName("stackedWidget");
-        stackedWidget->setGeometry(QRect(180, -20, 1201, 781));
+        stackedWidget->setGeometry(QRect(180, 0, 1201, 741));
         Ghabitants = new QWidget();
         Ghabitants->setObjectName("Ghabitants");
         stackedWidget_2 = new QStackedWidget(Ghabitants);
@@ -4805,17 +4799,14 @@ public:
         page_13->setObjectName("page_13");
         tableView_6 = new QTableView(page_13);
         tableView_6->setObjectName("tableView_6");
-        tableView_6->setGeometry(QRect(10, 10, 1111, 501));
+        tableView_6->setGeometry(QRect(10, 0, 1111, 561));
         label_58 = new QLabel(page_13);
         label_58->setObjectName("label_58");
-        label_58->setGeometry(QRect(130, 180, 63, 20));
+        label_58->setGeometry(QRect(50, 70, 63, 20));
         label_58->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        lineEdit_18 = new QLineEdit(page_13);
-        lineEdit_18->setObjectName("lineEdit_18");
-        lineEdit_18->setGeometry(QRect(180, 170, 113, 26));
         tableWidget = new QTableWidget(page_13);
         tableWidget->setObjectName("tableWidget");
-        tableWidget->setGeometry(QRect(20, 20, 1091, 81));
+        tableWidget->setGeometry(QRect(500, 10, 611, 391));
         tableWidget->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
@@ -4858,39 +4849,24 @@ public:
 "}"));
         label_3 = new QLabel(page_13);
         label_3->setObjectName("label_3");
-        label_3->setGeometry(QRect(30, 30, 151, 20));
+        label_3->setGeometry(QRect(30, 30, 161, 20));
         label_3->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        tableWidget_8 = new QTableWidget(page_13);
-        tableWidget_8->setObjectName("tableWidget_8");
-        tableWidget_8->setGeometry(QRect(610, 130, 401, 251));
         label_79 = new QLabel(page_13);
         label_79->setObjectName("label_79");
-        label_79->setGeometry(QRect(730, 140, 161, 20));
+        label_79->setGeometry(QRect(60, 210, 161, 20));
         label_79->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
         label_80 = new QLabel(page_13);
         label_80->setObjectName("label_80");
-        label_80->setGeometry(QRect(630, 180, 81, 20));
+        label_80->setGeometry(QRect(760, 20, 111, 20));
         label_80->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
         label_81 = new QLabel(page_13);
         label_81->setObjectName("label_81");
-        label_81->setGeometry(QRect(630, 220, 81, 20));
+        label_81->setGeometry(QRect(740, 140, 151, 20));
         label_81->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        label_82 = new QLabel(page_13);
-        label_82->setObjectName("label_82");
-        label_82->setGeometry(QRect(630, 250, 121, 20));
-        label_82->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        label_83 = new QLabel(page_13);
-        label_83->setObjectName("label_83");
-        label_83->setGeometry(QRect(630, 280, 131, 20));
-        label_83->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        label_84 = new QLabel(page_13);
-        label_84->setObjectName("label_84");
-        label_84->setGeometry(QRect(630, 320, 121, 20));
-        label_84->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        lineEdit_29 = new QLineEdit(page_13);
-        lineEdit_29->setObjectName("lineEdit_29");
-        lineEdit_29->setGeometry(QRect(720, 180, 113, 26));
-        lineEdit_29->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        lineMaint_id = new QLineEdit(page_13);
+        lineMaint_id->setObjectName("lineMaint_id");
+        lineMaint_id->setGeometry(QRect(50, 100, 113, 26));
+        lineMaint_id->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
@@ -4930,10 +4906,10 @@ public:
 "QLineEdit {\n"
 "    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
 "}"));
-        lineEdit_30 = new QLineEdit(page_13);
-        lineEdit_30->setObjectName("lineEdit_30");
-        lineEdit_30->setGeometry(QRect(770, 250, 113, 26));
-        lineEdit_30->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        lineMaint_matricule = new QLineEdit(page_13);
+        lineMaint_matricule->setObjectName("lineMaint_matricule");
+        lineMaint_matricule->setGeometry(QRect(50, 170, 113, 26));
+        lineMaint_matricule->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
@@ -4973,117 +4949,14 @@ public:
 "QLineEdit {\n"
 "    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
 "}"));
-        lineEdit_31 = new QLineEdit(page_13);
-        lineEdit_31->setObjectName("lineEdit_31");
-        lineEdit_31->setGeometry(QRect(770, 280, 113, 26));
-        lineEdit_31->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
-"    background-color: #ffffff;\n"
-"    border: 1.5px solid #cfd9e6;\n"
-"    border-radius: 8px;\n"
-"    padding: 6px 10px;\n"
-"    font-size: 13px;\n"
-"    color: #0a1a2f;\n"
-"    selection-background-color: #c7e0ff;\n"
-"    selection-color: #000000;\n"
-"}\n"
-"\n"
-"/* Focused (when user clicks or types) */\n"
-"QLineEdit:focus {\n"
-"    border: 2px solid #0078d7;          /* Modern blue accent */\n"
-"    background-color: #ffffff;\n"
-"    outline: none;\n"
-"}\n"
-"\n"
-"/* Hover effect */\n"
-"QLineEdit:hover {\n"
-"    border: 1.5px solid #9bbadf;\n"
-"}\n"
-"\n"
-"/* Disabled (grayed-out field) */\n"
-"QLineEdit:disabled {\n"
-"    background-color: #f0f3f6;\n"
-"    color: #8c8c8c;\n"
-"    border: 1px solid #d0d6df;\n"
-"}\n"
-"\n"
-"/* Placeholder text style */\n"
-"QLineEdit::placeholder {\n"
-"    color: #a0a9b8;\n"
-"    font-style: italic;\n"
-"}\n"
-"\n"
-"/* Optional subtle shadow for depth */\n"
-"QLineEdit {\n"
-"    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
-"}"));
-        lineEdit_32 = new QLineEdit(page_13);
-        lineEdit_32->setObjectName("lineEdit_32");
-        lineEdit_32->setGeometry(QRect(740, 320, 113, 26));
-        lineEdit_32->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
-"    background-color: #ffffff;\n"
-"    border: 1.5px solid #cfd9e6;\n"
-"    border-radius: 8px;\n"
-"    padding: 6px 10px;\n"
-"    font-size: 13px;\n"
-"    color: #0a1a2f;\n"
-"    selection-background-color: #c7e0ff;\n"
-"    selection-color: #000000;\n"
-"}\n"
-"\n"
-"/* Focused (when user clicks or types) */\n"
-"QLineEdit:focus {\n"
-"    border: 2px solid #0078d7;          /* Modern blue accent */\n"
-"    background-color: #ffffff;\n"
-"    outline: none;\n"
-"}\n"
-"\n"
-"/* Hover effect */\n"
-"QLineEdit:hover {\n"
-"    border: 1.5px solid #9bbadf;\n"
-"}\n"
-"\n"
-"/* Disabled (grayed-out field) */\n"
-"QLineEdit:disabled {\n"
-"    background-color: #f0f3f6;\n"
-"    color: #8c8c8c;\n"
-"    border: 1px solid #d0d6df;\n"
-"}\n"
-"\n"
-"/* Placeholder text style */\n"
-"QLineEdit::placeholder {\n"
-"    color: #a0a9b8;\n"
-"    font-style: italic;\n"
-"}\n"
-"\n"
-"/* Optional subtle shadow for depth */\n"
-"QLineEdit {\n"
-"    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
-"}"));
-        progressBar_3 = new QProgressBar(page_13);
-        progressBar_3->setObjectName("progressBar_3");
-        progressBar_3->setGeometry(QRect(710, 220, 118, 23));
-        progressBar_3->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        progressBar_3->setValue(24);
-        label_85 = new QLabel(page_13);
-        label_85->setObjectName("label_85");
-        label_85->setGeometry(QRect(180, 140, 161, 20));
-        label_85->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
         label_86 = new QLabel(page_13);
         label_86->setObjectName("label_86");
-        label_86->setGeometry(QRect(130, 220, 63, 20));
+        label_86->setGeometry(QRect(50, 140, 81, 20));
         label_86->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        lineEdit_33 = new QLineEdit(page_13);
-        lineEdit_33->setObjectName("lineEdit_33");
-        lineEdit_33->setGeometry(QRect(180, 220, 113, 26));
-        horizontalLayoutWidget_2 = new QWidget(page_13);
-        horizontalLayoutWidget_2->setObjectName("horizontalLayoutWidget_2");
-        horizontalLayoutWidget_2->setGeometry(QRect(30, 410, 1061, 80));
-        horizontalLayout_2 = new QHBoxLayout(horizontalLayoutWidget_2);
-        horizontalLayout_2->setObjectName("horizontalLayout_2");
-        horizontalLayout_2->setContentsMargins(0, 0, 0, 0);
-        pushButton_7 = new QPushButton(horizontalLayoutWidget_2);
-        pushButton_7->setObjectName("pushButton_7");
-        pushButton_7->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        btnMaint_effacer = new QPushButton(page_13);
+        btnMaint_effacer->setObjectName("btnMaint_effacer");
+        btnMaint_effacer->setGeometry(QRect(360, 330, 81, 37));
+        btnMaint_effacer->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -5106,12 +4979,10 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-
-        horizontalLayout_2->addWidget(pushButton_7);
-
-        pushButton_8 = new QPushButton(horizontalLayoutWidget_2);
-        pushButton_8->setObjectName("pushButton_8");
-        pushButton_8->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        btnMaint_diagnostiquer = new QPushButton(page_13);
+        btnMaint_diagnostiquer->setObjectName("btnMaint_diagnostiquer");
+        btnMaint_diagnostiquer->setGeometry(QRect(30, 330, 101, 37));
+        btnMaint_diagnostiquer->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -5134,12 +5005,23 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-
-        horizontalLayout_2->addWidget(pushButton_8);
-
-        pushButton_11 = new QPushButton(horizontalLayoutWidget_2);
-        pushButton_11->setObjectName("pushButton_11");
-        pushButton_11->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        comboMaint_type = new QComboBox(page_13);
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->addItem(QString());
+        comboMaint_type->setObjectName("comboMaint_type");
+        comboMaint_type->setGeometry(QRect(130, 260, 241, 28));
+        btnMaint_ajouter = new QPushButton(page_13);
+        btnMaint_ajouter->setObjectName("btnMaint_ajouter");
+        btnMaint_ajouter->setGeometry(QRect(210, 330, 81, 37));
+        btnMaint_ajouter->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -5162,37 +5044,21 @@ public:
 "    border-color: #011f3f;\n"
 "}\n"
 ""));
-
-        horizontalLayout_2->addWidget(pushButton_11);
-
-        pushButton_16 = new QPushButton(horizontalLayoutWidget_2);
-        pushButton_16->setObjectName("pushButton_16");
-        pushButton_16->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
-"QPushButton {\n"
-"    background-color: #012a59;\n"
-"    color: #ffffff;\n"
-"    border: 2px solid #013366;\n"
-"    border-radius: 10px;\n"
-"    padding: 8px 14px;\n"
-"    font-size: 13px;\n"
-"    font-weight: 500;\n"
-"    text-align: left;\n"
-"    transition: all 0.3s ease-in-out;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: #024b8a;\n"
-"    border-color: #025aa5;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: #013869;\n"
-"    border-color: #011f3f;\n"
-"}\n"
-""));
-
-        horizontalLayout_2->addWidget(pushButton_16);
-
+        tableMaint_history = new QTableView(page_13);
+        tableMaint_history->setObjectName("tableMaint_history");
+        tableMaint_history->setGeometry(QRect(20, 430, 1091, 121));
+        label_85 = new QLabel(page_13);
+        label_85->setObjectName("label_85");
+        label_85->setGeometry(QRect(490, 400, 81, 20));
+        label_85->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+        textMaint_alertes = new QLabel(page_13);
+        textMaint_alertes->setObjectName("textMaint_alertes");
+        textMaint_alertes->setGeometry(QRect(520, 50, 571, 71));
+        textMaint_alertes->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255);"));
+        textMaint_diag = new QLabel(page_13);
+        textMaint_diag->setObjectName("textMaint_diag");
+        textMaint_diag->setGeometry(QRect(520, 179, 571, 201));
+        textMaint_diag->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255);"));
         stackedWidget_5->addWidget(page_13);
         page_11 = new QWidget();
         page_11->setObjectName("page_11");
@@ -5247,34 +5113,6 @@ public:
 
         horizontalLayout_7->addWidget(lineEdit_vehicule_recherche);
 
-        pushButton_13 = new QPushButton(horizontalLayoutWidget_7);
-        pushButton_13->setObjectName("pushButton_13");
-        pushButton_13->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
-"QPushButton {\n"
-"    background-color: #012a59;\n"
-"    color: #ffffff;\n"
-"    border: 2px solid #013366;\n"
-"    border-radius: 10px;\n"
-"    padding: 8px 14px;\n"
-"    font-size: 13px;\n"
-"    font-weight: 500;\n"
-"    text-align: left;\n"
-"    transition: all 0.3s ease-in-out;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: #024b8a;\n"
-"    border-color: #025aa5;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: #013869;\n"
-"    border-color: #011f3f;\n"
-"}\n"
-""));
-
-        horizontalLayout_7->addWidget(pushButton_13);
-
         btn_vehicule_rechercher = new QPushButton(horizontalLayoutWidget_7);
         btn_vehicule_rechercher->setObjectName("btn_vehicule_rechercher");
         btn_vehicule_rechercher->setStyleSheet(QString::fromUtf8("\n"
@@ -5327,10 +5165,10 @@ public:
 "    border-color: #011f3f;\n"
 "\n"
 ""));
-        pushButton_14 = new QPushButton(page_11);
-        pushButton_14->setObjectName("pushButton_14");
-        pushButton_14->setGeometry(QRect(90, 400, 93, 31));
-        pushButton_14->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+        btn_vehicule_tri = new QPushButton(page_11);
+        btn_vehicule_tri->setObjectName("btn_vehicule_tri");
+        btn_vehicule_tri->setGeometry(QRect(90, 400, 93, 31));
+        btn_vehicule_tri->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
 "QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
@@ -5455,13 +5293,13 @@ public:
         label_52->setObjectName("label_52");
         label_52->setGeometry(QRect(500, 430, 81, 20));
         label_52->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        comboBox_8 = new QComboBox(page_11);
-        comboBox_8->addItem(QString());
-        comboBox_8->addItem(QString());
-        comboBox_8->addItem(QString());
-        comboBox_8->setObjectName("comboBox_8");
-        comboBox_8->setGeometry(QRect(580, 390, 71, 31));
-        comboBox_8->setStyleSheet(QString::fromUtf8("\n"
+        comboBox_vehicule_format = new QComboBox(page_11);
+        comboBox_vehicule_format->addItem(QString());
+        comboBox_vehicule_format->addItem(QString());
+        comboBox_vehicule_format->addItem(QString());
+        comboBox_vehicule_format->setObjectName("comboBox_vehicule_format");
+        comboBox_vehicule_format->setGeometry(QRect(580, 390, 71, 31));
+        comboBox_vehicule_format->setStyleSheet(QString::fromUtf8("\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
 "    border: 2px solid #013366;\n"
@@ -5480,12 +5318,12 @@ public:
 "    border-color: #011f3f;\n"
 "\n"
 ""));
-        comboBox_15 = new QComboBox(page_11);
-        comboBox_15->addItem(QString());
-        comboBox_15->addItem(QString());
-        comboBox_15->setObjectName("comboBox_15");
-        comboBox_15->setGeometry(QRect(570, 430, 101, 31));
-        comboBox_15->setStyleSheet(QString::fromUtf8("\n"
+        comboBox_vehicule_qualite = new QComboBox(page_11);
+        comboBox_vehicule_qualite->addItem(QString());
+        comboBox_vehicule_qualite->addItem(QString());
+        comboBox_vehicule_qualite->setObjectName("comboBox_vehicule_qualite");
+        comboBox_vehicule_qualite->setGeometry(QRect(570, 430, 101, 31));
+        comboBox_vehicule_qualite->setStyleSheet(QString::fromUtf8("\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
 "    border: 2px solid #013366;\n"
@@ -5516,10 +5354,10 @@ public:
         label_55->setObjectName("label_55");
         label_55->setGeometry(QRect(680, 430, 131, 21));
         label_55->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        lineEdit_14 = new QLineEdit(page_11);
-        lineEdit_14->setObjectName("lineEdit_14");
-        lineEdit_14->setGeometry(QRect(810, 390, 113, 26));
-        lineEdit_14->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        nomV = new QLineEdit(page_11);
+        nomV->setObjectName("nomV");
+        nomV->setGeometry(QRect(810, 390, 113, 26));
+        nomV->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
@@ -5559,10 +5397,10 @@ public:
 "QLineEdit {\n"
 "    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
 "}"));
-        lineEdit_15 = new QLineEdit(page_11);
-        lineEdit_15->setObjectName("lineEdit_15");
-        lineEdit_15->setGeometry(QRect(800, 430, 113, 26));
-        lineEdit_15->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        emplacementV = new QLineEdit(page_11);
+        emplacementV->setObjectName("emplacementV");
+        emplacementV->setGeometry(QRect(800, 430, 113, 26));
+        emplacementV->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
@@ -5681,9 +5519,9 @@ public:
         combo_vehicule_type->addItem(QString());
         combo_vehicule_type->setObjectName("combo_vehicule_type");
         combo_vehicule_type->setGeometry(QRect(120, 40, 111, 28));
-        pushButton_12 = new QPushButton(page_11);
-        pushButton_12->setObjectName("pushButton_12");
-        pushButton_12->setGeometry(QRect(1050, 400, 101, 41));
+        btn_vehicule_exporter = new QPushButton(page_11);
+        btn_vehicule_exporter->setObjectName("btn_vehicule_exporter");
+        btn_vehicule_exporter->setGeometry(QRect(1050, 400, 101, 41));
         tableView_vehicule = new QTableView(page_11);
         tableView_vehicule->setObjectName("tableView_vehicule");
         tableView_vehicule->setGeometry(QRect(10, 60, 911, 301));
@@ -5698,10 +5536,10 @@ public:
         label_56->setObjectName("label_56");
         label_56->setGeometry(QRect(40, 20, 131, 21));
         label_56->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        lineEdit_16 = new QLineEdit(page_12);
-        lineEdit_16->setObjectName("lineEdit_16");
-        lineEdit_16->setGeometry(QRect(100, 20, 113, 26));
-        lineEdit_16->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        lineIDVehicule = new QLineEdit(page_12);
+        lineIDVehicule->setObjectName("lineIDVehicule");
+        lineIDVehicule->setGeometry(QRect(60, 50, 113, 26));
+        lineIDVehicule->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
@@ -5743,16 +5581,13 @@ public:
 "}"));
         label_57 = new QLabel(page_12);
         label_57->setObjectName("label_57");
-        label_57->setGeometry(QRect(40, 70, 101, 20));
+        label_57->setGeometry(QRect(40, 90, 101, 20));
         label_57->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
-        comboBox_16 = new QComboBox(page_12);
-        comboBox_16->addItem(QString());
-        comboBox_16->addItem(QString());
-        comboBox_16->addItem(QString());
-        comboBox_16->addItem(QString());
-        comboBox_16->setObjectName("comboBox_16");
-        comboBox_16->setGeometry(QRect(80, 70, 91, 31));
-        comboBox_16->setStyleSheet(QString::fromUtf8("\n"
+        btnCalculerConso = new QPushButton(page_12);
+        btnCalculerConso->setObjectName("btnCalculerConso");
+        btnCalculerConso->setGeometry(QRect(110, 360, 131, 41));
+        btnCalculerConso->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+"QPushButton {\n"
 "    background-color: #012a59;\n"
 "    color: #ffffff;\n"
 "    border: 2px solid #013366;\n"
@@ -5762,19 +5597,48 @@ public:
 "    font-weight: 500;\n"
 "    text-align: left;\n"
 "    transition: all 0.3s ease-in-out;\n"
+"}\n"
 "\n"
+"QPushButton:hover {\n"
 "    background-color: #024b8a;\n"
 "    border-color: #025aa5;\n"
+"}\n"
 "\n"
-"\n"
+"QPushButton:pressed {\n"
 "    background-color: #013869;\n"
 "    border-color: #011f3f;\n"
-"\n"
+"}\n"
 ""));
-        lineEdit_17 = new QLineEdit(page_12);
-        lineEdit_17->setObjectName("lineEdit_17");
-        lineEdit_17->setGeometry(QRect(40, 110, 801, 26));
-        lineEdit_17->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+        btn_effacer_conso = new QPushButton(page_12);
+        btn_effacer_conso->setObjectName("btn_effacer_conso");
+        btn_effacer_conso->setGeometry(QRect(300, 360, 81, 41));
+        btn_effacer_conso->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
+"QPushButton {\n"
+"    background-color: #012a59;\n"
+"    color: #ffffff;\n"
+"    border: 2px solid #013366;\n"
+"    border-radius: 10px;\n"
+"    padding: 8px 14px;\n"
+"    font-size: 13px;\n"
+"    font-weight: 500;\n"
+"    text-align: left;\n"
+"    transition: all 0.3s ease-in-out;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: #024b8a;\n"
+"    border-color: #025aa5;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: #013869;\n"
+"    border-color: #011f3f;\n"
+"}\n"
+""));
+        lineMatricule = new QLineEdit(page_12);
+        lineMatricule->setObjectName("lineMatricule");
+        lineMatricule->setGeometry(QRect(60, 130, 113, 26));
+        lineMatricule->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
 "    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
@@ -5814,135 +5678,111 @@ public:
 "QLineEdit {\n"
 "    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
 "}"));
-        pushButton = new QPushButton(page_12);
-        pushButton->setObjectName("pushButton");
-        pushButton->setGeometry(QRect(850, 110, 93, 31));
-        pushButton->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
-"QPushButton {\n"
-"    background-color: #012a59;\n"
-"    color: #ffffff;\n"
-"    border: 2px solid #013366;\n"
-"    border-radius: 10px;\n"
-"    padding: 8px 14px;\n"
-"    font-size: 13px;\n"
-"    font-weight: 500;\n"
-"    text-align: left;\n"
-"    transition: all 0.3s ease-in-out;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: #024b8a;\n"
-"    border-color: #025aa5;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: #013869;\n"
-"    border-color: #011f3f;\n"
-"}\n"
-""));
-        tableWidget_5 = new QTableWidget(page_12);
-        if (tableWidget_5->columnCount() < 5)
-            tableWidget_5->setColumnCount(5);
-        QTableWidgetItem *__qtablewidgetitem34 = new QTableWidgetItem();
-        tableWidget_5->setHorizontalHeaderItem(0, __qtablewidgetitem34);
-        QTableWidgetItem *__qtablewidgetitem35 = new QTableWidgetItem();
-        tableWidget_5->setHorizontalHeaderItem(1, __qtablewidgetitem35);
-        QTableWidgetItem *__qtablewidgetitem36 = new QTableWidgetItem();
-        tableWidget_5->setHorizontalHeaderItem(2, __qtablewidgetitem36);
-        QTableWidgetItem *__qtablewidgetitem37 = new QTableWidgetItem();
-        tableWidget_5->setHorizontalHeaderItem(3, __qtablewidgetitem37);
-        QTableWidgetItem *__qtablewidgetitem38 = new QTableWidgetItem();
-        tableWidget_5->setHorizontalHeaderItem(4, __qtablewidgetitem38);
-        if (tableWidget_5->rowCount() < 7)
-            tableWidget_5->setRowCount(7);
-        QTableWidgetItem *__qtablewidgetitem39 = new QTableWidgetItem();
-        tableWidget_5->setVerticalHeaderItem(0, __qtablewidgetitem39);
-        QTableWidgetItem *__qtablewidgetitem40 = new QTableWidgetItem();
-        tableWidget_5->setVerticalHeaderItem(1, __qtablewidgetitem40);
-        QTableWidgetItem *__qtablewidgetitem41 = new QTableWidgetItem();
-        tableWidget_5->setVerticalHeaderItem(2, __qtablewidgetitem41);
-        QTableWidgetItem *__qtablewidgetitem42 = new QTableWidgetItem();
-        tableWidget_5->setVerticalHeaderItem(3, __qtablewidgetitem42);
-        QTableWidgetItem *__qtablewidgetitem43 = new QTableWidgetItem();
-        tableWidget_5->setVerticalHeaderItem(4, __qtablewidgetitem43);
-        QTableWidgetItem *__qtablewidgetitem44 = new QTableWidgetItem();
-        tableWidget_5->setVerticalHeaderItem(5, __qtablewidgetitem44);
-        tableWidget_5->setObjectName("tableWidget_5");
-        tableWidget_5->setGeometry(QRect(40, 150, 801, 301));
-        tableWidget_5->setStyleSheet(QString::fromUtf8("QTableWidget {\n"
+        label_60 = new QLabel(page_12);
+        label_60->setObjectName("label_60");
+        label_60->setGeometry(QRect(60, 180, 181, 21));
+        label_60->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+        label_61 = new QLabel(page_12);
+        label_61->setObjectName("label_61");
+        label_61->setGeometry(QRect(60, 260, 191, 21));
+        label_61->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+        lineDistance = new QLineEdit(page_12);
+        lineDistance->setObjectName("lineDistance");
+        lineDistance->setGeometry(QRect(60, 210, 221, 26));
+        lineDistance->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
 "    background-color: #ffffff;\n"
-"    alternate-background-color: #f2f6fc;\n"
-"    gridline-color: #dbe3ec;\n"
-"    border: 1px solid #cfd9e6;\n"
+"    border: 1.5px solid #cfd9e6;\n"
 "    border-radius: 8px;\n"
+"    padding: 6px 10px;\n"
+"    font-size: 13px;\n"
+"    color: #0a1a2f;\n"
 "    selection-background-color: #c7e0ff;\n"
 "    selection-color: #000000;\n"
 "}\n"
 "\n"
-"QHeaderView::section {\n"
-"    background-color: #0c2d57;\n"
-"    color: #ffffff;\n"
-"    padding: 6px;\n"
-"    border: none;\n"
-"    font-weight: 600;\n"
-"    font-size: 12px;\n"
+"/* Focused (when user clicks or types) */\n"
+"QLineEdit:focus {\n"
+"    border: 2px solid #0078d7;          /* Modern blue accent */\n"
+"    background-color: #ffffff;\n"
+"    outline: none;\n"
 "}\n"
 "\n"
-"QTableCornerButton::section {\n"
-"    background-color: #0c2d57;\n"
+"/* Hover effect */\n"
+"QLineEdit:hover {\n"
+"    border: 1.5px solid #9bbadf;\n"
+"}\n"
+"\n"
+"/* Disabled (grayed-out field) */\n"
+"QLineEdit:disabled {\n"
+"    background-color: #f0f3f6;\n"
+"    color: #8c8c8c;\n"
+"    border: 1px solid #d0d6df;\n"
+"}\n"
+"\n"
+"/* Placeholder text style */\n"
+"QLineEdit::placeholder {\n"
+"    color: #a0a9b8;\n"
+"    font-style: italic;\n"
+"}\n"
+"\n"
+"/* Optional subtle shadow for depth */\n"
+"QLineEdit {\n"
+"    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
 "}"));
-        pushButton_2 = new QPushButton(page_12);
-        pushButton_2->setObjectName("pushButton_2");
-        pushButton_2->setGeometry(QRect(930, 260, 131, 41));
-        pushButton_2->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
-"QPushButton {\n"
-"    background-color: #012a59;\n"
-"    color: #ffffff;\n"
-"    border: 2px solid #013366;\n"
-"    border-radius: 10px;\n"
-"    padding: 8px 14px;\n"
+        lineConso = new QLineEdit(page_12);
+        lineConso->setObjectName("lineConso");
+        lineConso->setGeometry(QRect(60, 300, 221, 26));
+        lineConso->setStyleSheet(QString::fromUtf8("QLineEdit {\n"
+"    background-color: #ffffff;\n"
+"    border: 1.5px solid #cfd9e6;\n"
+"    border-radius: 8px;\n"
+"    padding: 6px 10px;\n"
 "    font-size: 13px;\n"
-"    font-weight: 500;\n"
-"    text-align: left;\n"
-"    transition: all 0.3s ease-in-out;\n"
+"    color: #0a1a2f;\n"
+"    selection-background-color: #c7e0ff;\n"
+"    selection-color: #000000;\n"
 "}\n"
 "\n"
-"QPushButton:hover {\n"
-"    background-color: #024b8a;\n"
-"    border-color: #025aa5;\n"
+"/* Focused (when user clicks or types) */\n"
+"QLineEdit:focus {\n"
+"    border: 2px solid #0078d7;          /* Modern blue accent */\n"
+"    background-color: #ffffff;\n"
+"    outline: none;\n"
 "}\n"
 "\n"
-"QPushButton:pressed {\n"
-"    background-color: #013869;\n"
-"    border-color: #011f3f;\n"
-"}\n"
-""));
-        pushButton_3 = new QPushButton(page_12);
-        pushButton_3->setObjectName("pushButton_3");
-        pushButton_3->setGeometry(QRect(930, 310, 131, 41));
-        pushButton_3->setStyleSheet(QString::fromUtf8("/* ==== BUTTONS STYLE ==== */\n"
-"QPushButton {\n"
-"    background-color: #012a59;\n"
-"    color: #ffffff;\n"
-"    border: 2px solid #013366;\n"
-"    border-radius: 10px;\n"
-"    padding: 8px 14px;\n"
-"    font-size: 13px;\n"
-"    font-weight: 500;\n"
-"    text-align: left;\n"
-"    transition: all 0.3s ease-in-out;\n"
+"/* Hover effect */\n"
+"QLineEdit:hover {\n"
+"    border: 1.5px solid #9bbadf;\n"
 "}\n"
 "\n"
-"QPushButton:hover {\n"
-"    background-color: #024b8a;\n"
-"    border-color: #025aa5;\n"
+"/* Disabled (grayed-out field) */\n"
+"QLineEdit:disabled {\n"
+"    background-color: #f0f3f6;\n"
+"    color: #8c8c8c;\n"
+"    border: 1px solid #d0d6df;\n"
 "}\n"
 "\n"
-"QPushButton:pressed {\n"
-"    background-color: #013869;\n"
-"    border-color: #011f3f;\n"
+"/* Placeholder text style */\n"
+"QLineEdit::placeholder {\n"
+"    color: #a0a9b8;\n"
+"    font-style: italic;\n"
 "}\n"
-""));
+"\n"
+"/* Optional subtle shadow for depth */\n"
+"QLineEdit {\n"
+"    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);\n"
+"}"));
+        label_62 = new QLabel(page_12);
+        label_62->setObjectName("label_62");
+        label_62->setGeometry(QRect(500, 30, 221, 31));
+        label_62->setStyleSheet(QString::fromUtf8("color: rgb(0, 0, 0);"));
+        label_conso_resultat = new QLabel(page_12);
+        label_conso_resultat->setObjectName("label_conso_resultat");
+        label_conso_resultat->setGeometry(QRect(530, 69, 461, 51));
+        label_conso_resultat->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255);"));
+        tableViewConso = new QTableView(page_12);
+        tableViewConso->setObjectName("tableViewConso");
+        tableViewConso->setGeometry(QRect(455, 141, 651, 311));
         stackedWidget_5->addWidget(page_12);
         stackedWidget->addWidget(Gvehicules);
         label_24 = new QLabel(centralwidget);
@@ -5955,7 +5795,7 @@ public:
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");
-        menubar->setGeometry(QRect(0, 0, 1446, 21));
+        menubar->setGeometry(QRect(0, 0, 1446, 25));
         MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName("statusbar");
@@ -5964,9 +5804,9 @@ public:
         retranslateUi(MainWindow);
 
         stackedWidget_2->setCurrentIndex(3);
-        stackedWidget_6->setCurrentIndex(0);
+        stackedWidget_6->setCurrentIndex(2);
         stackedWidget_3->setCurrentIndex(0);
-        stackedWidget_5->setCurrentIndex(0);
+        stackedWidget_5->setCurrentIndex(1);
 
 
         QMetaObject::connectSlotsByName(MainWindow);
@@ -6283,39 +6123,47 @@ public:
         on_pushButton_5->setText(QCoreApplication::translate("MainWindow", "                                 consommation", nullptr));
         on_pushButton_6->setText(QCoreApplication::translate("MainWindow", "                                   maintenance", nullptr));
         label_58->setText(QCoreApplication::translate("MainWindow", "ID :", nullptr));
-        label_3->setText(QCoreApplication::translate("MainWindow", "Zone alerte :", nullptr));
-        label_79->setText(QCoreApplication::translate("MainWindow", "Details techniques", nullptr));
-        label_80->setText(QCoreApplication::translate("MainWindow", "Km actuel", nullptr));
-        label_81->setText(QCoreApplication::translate("MainWindow", "Batterie :", nullptr));
-        label_82->setText(QCoreApplication::translate("MainWindow", "dernier entretien :", nullptr));
-        label_83->setText(QCoreApplication::translate("MainWindow", "prochain entretien :", nullptr));
-        label_84->setText(QCoreApplication::translate("MainWindow", "Km proche :", nullptr));
-        label_85->setText(QCoreApplication::translate("MainWindow", "Rechercher vehicule", nullptr));
-        label_86->setText(QCoreApplication::translate("MainWindow", "type :", nullptr));
-        pushButton_7->setText(QCoreApplication::translate("MainWindow", "                 Planifier entretien", nullptr));
-        pushButton_8->setText(QCoreApplication::translate("MainWindow", "                  V\303\251rifier batterie", nullptr));
-        pushButton_11->setText(QCoreApplication::translate("MainWindow", "                     Historique", nullptr));
-        pushButton_16->setText(QCoreApplication::translate("MainWindow", "                         Stat", nullptr));
+        label_3->setText(QCoreApplication::translate("MainWindow", "informations vehicule:", nullptr));
+        label_79->setText(QCoreApplication::translate("MainWindow", " Probl\303\250mes : ", nullptr));
+        label_80->setText(QCoreApplication::translate("MainWindow", "  ALERTES \342\232\240\357\270\217  ", nullptr));
+        label_81->setText(QCoreApplication::translate("MainWindow", "Diagnostic Final \360\237\224\247 ", nullptr));
+        label_86->setText(QCoreApplication::translate("MainWindow", "matricule:", nullptr));
+        btnMaint_effacer->setText(QCoreApplication::translate("MainWindow", "effacer", nullptr));
+        btnMaint_diagnostiquer->setText(QCoreApplication::translate("MainWindow", "diagnoster", nullptr));
+        comboMaint_type->setItemText(0, QCoreApplication::translate("MainWindow", "1. Moteur surchauffe", nullptr));
+        comboMaint_type->setItemText(1, QCoreApplication::translate("MainWindow", "2. Niveau d\342\200\231huile tr\303\250s bas", nullptr));
+        comboMaint_type->setItemText(2, QCoreApplication::translate("MainWindow", "3. Batterie faible", nullptr));
+        comboMaint_type->setItemText(3, QCoreApplication::translate("MainWindow", "4. Pression pneus basse", nullptr));
+        comboMaint_type->setItemText(4, QCoreApplication::translate("MainWindow", "5. Bruit m\303\251tallique moteur", nullptr));
+        comboMaint_type->setItemText(5, QCoreApplication::translate("MainWindow", "6. Freins faibles", nullptr));
+        comboMaint_type->setItemText(6, QCoreApplication::translate("MainWindow", "7. Fum\303\251e anormale \303\251chappement", nullptr));
+        comboMaint_type->setItemText(7, QCoreApplication::translate("MainWindow", "8. Surconsommation carburant", nullptr));
+        comboMaint_type->setItemText(8, QCoreApplication::translate("MainWindow", "9. Probl\303\250me de d\303\251marrage", nullptr));
+        comboMaint_type->setItemText(9, QCoreApplication::translate("MainWindow", "10. Vibrations anormales", nullptr));
+
+        btnMaint_ajouter->setText(QCoreApplication::translate("MainWindow", "ajouter", nullptr));
+        label_85->setText(QCoreApplication::translate("MainWindow", "historique:", nullptr));
+        textMaint_alertes->setText(QString());
+        textMaint_diag->setText(QString());
         lineEdit_vehicule_recherche->setText(QCoreApplication::translate("MainWindow", "Rechercher des vh\303\251icules \360\237\224\216", nullptr));
-        pushButton_13->setText(QCoreApplication::translate("MainWindow", "Chercher", nullptr));
         btn_vehicule_rechercher->setText(QCoreApplication::translate("MainWindow", "Rechercher", nullptr));
         label_49->setText(QCoreApplication::translate("MainWindow", "TRIER PAR:", nullptr));
         comboBox_3->setItemText(0, QCoreApplication::translate("MainWindow", "ID", nullptr));
         comboBox_3->setItemText(1, QCoreApplication::translate("MainWindow", "type", nullptr));
 
-        pushButton_14->setText(QCoreApplication::translate("MainWindow", "TRIER", nullptr));
+        btn_vehicule_tri->setText(QCoreApplication::translate("MainWindow", "TRIER", nullptr));
         btn_vehicule_modifier->setText(QCoreApplication::translate("MainWindow", "Modifier ", nullptr));
         btn_vehicule_supprimer->setText(QCoreApplication::translate("MainWindow", "Supprimer \360\237\227\221\357\270\217", nullptr));
         btn_vehicule_ajouter->setText(QCoreApplication::translate("MainWindow", "Ajouter \342\234\224\357\270\217", nullptr));
         label_50->setText(QCoreApplication::translate("MainWindow", "EXPORT PDF :", nullptr));
         label_51->setText(QCoreApplication::translate("MainWindow", "FORMAT:", nullptr));
         label_52->setText(QCoreApplication::translate("MainWindow", "QUALITE:", nullptr));
-        comboBox_8->setItemText(0, QCoreApplication::translate("MainWindow", "A3", nullptr));
-        comboBox_8->setItemText(1, QCoreApplication::translate("MainWindow", "A4", nullptr));
-        comboBox_8->setItemText(2, QCoreApplication::translate("MainWindow", "A5", nullptr));
+        comboBox_vehicule_format->setItemText(0, QCoreApplication::translate("MainWindow", "A3", nullptr));
+        comboBox_vehicule_format->setItemText(1, QCoreApplication::translate("MainWindow", "A4", nullptr));
+        comboBox_vehicule_format->setItemText(2, QCoreApplication::translate("MainWindow", "A5", nullptr));
 
-        comboBox_15->setItemText(0, QCoreApplication::translate("MainWindow", "standard", nullptr));
-        comboBox_15->setItemText(1, QCoreApplication::translate("MainWindow", "***", nullptr));
+        comboBox_vehicule_qualite->setItemText(0, QCoreApplication::translate("MainWindow", "standard", nullptr));
+        comboBox_vehicule_qualite->setItemText(1, QCoreApplication::translate("MainWindow", "***", nullptr));
 
         label_53->setText(QCoreApplication::translate("MainWindow", "DESTINATION DU FICHIER :", nullptr));
         label_54->setText(QCoreApplication::translate("MainWindow", "NOM DU FICHIER :", nullptr));
@@ -6339,39 +6187,15 @@ public:
         combo_vehicule_type->setItemText(1, QCoreApplication::translate("MainWindow", "Voiture", nullptr));
         combo_vehicule_type->setItemText(2, QCoreApplication::translate("MainWindow", "Tram", nullptr));
 
-        pushButton_12->setText(QCoreApplication::translate("MainWindow", "afficher", nullptr));
+        btn_vehicule_exporter->setText(QCoreApplication::translate("MainWindow", "exporter", nullptr));
         label_56->setText(QCoreApplication::translate("MainWindow", "ID :", nullptr));
-        label_57->setText(QCoreApplication::translate("MainWindow", "type:", nullptr));
-        comboBox_16->setItemText(0, QCoreApplication::translate("MainWindow", "bus", nullptr));
-        comboBox_16->setItemText(1, QCoreApplication::translate("MainWindow", "train", nullptr));
-        comboBox_16->setItemText(2, QCoreApplication::translate("MainWindow", "vehicule", nullptr));
-        comboBox_16->setItemText(3, QCoreApplication::translate("MainWindow", "moto", nullptr));
-
-        pushButton->setText(QCoreApplication::translate("MainWindow", "Rechercher", nullptr));
-        QTableWidgetItem *___qtablewidgetitem34 = tableWidget_5->horizontalHeaderItem(0);
-        ___qtablewidgetitem34->setText(QCoreApplication::translate("MainWindow", "Nouvelle colonne", nullptr));
-        QTableWidgetItem *___qtablewidgetitem35 = tableWidget_5->horizontalHeaderItem(1);
-        ___qtablewidgetitem35->setText(QCoreApplication::translate("MainWindow", "ID", nullptr));
-        QTableWidgetItem *___qtablewidgetitem36 = tableWidget_5->horizontalHeaderItem(2);
-        ___qtablewidgetitem36->setText(QCoreApplication::translate("MainWindow", "matricule", nullptr));
-        QTableWidgetItem *___qtablewidgetitem37 = tableWidget_5->horizontalHeaderItem(3);
-        ___qtablewidgetitem37->setText(QCoreApplication::translate("MainWindow", "type", nullptr));
-        QTableWidgetItem *___qtablewidgetitem38 = tableWidget_5->horizontalHeaderItem(4);
-        ___qtablewidgetitem38->setText(QCoreApplication::translate("MainWindow", "consommation", nullptr));
-        QTableWidgetItem *___qtablewidgetitem39 = tableWidget_5->verticalHeaderItem(0);
-        ___qtablewidgetitem39->setText(QCoreApplication::translate("MainWindow", "Nouvelle ligne", nullptr));
-        QTableWidgetItem *___qtablewidgetitem40 = tableWidget_5->verticalHeaderItem(1);
-        ___qtablewidgetitem40->setText(QCoreApplication::translate("MainWindow", "1", nullptr));
-        QTableWidgetItem *___qtablewidgetitem41 = tableWidget_5->verticalHeaderItem(2);
-        ___qtablewidgetitem41->setText(QCoreApplication::translate("MainWindow", "2", nullptr));
-        QTableWidgetItem *___qtablewidgetitem42 = tableWidget_5->verticalHeaderItem(3);
-        ___qtablewidgetitem42->setText(QCoreApplication::translate("MainWindow", "3", nullptr));
-        QTableWidgetItem *___qtablewidgetitem43 = tableWidget_5->verticalHeaderItem(4);
-        ___qtablewidgetitem43->setText(QCoreApplication::translate("MainWindow", "4", nullptr));
-        QTableWidgetItem *___qtablewidgetitem44 = tableWidget_5->verticalHeaderItem(5);
-        ___qtablewidgetitem44->setText(QCoreApplication::translate("MainWindow", "5", nullptr));
-        pushButton_2->setText(QCoreApplication::translate("MainWindow", "  consommation", nullptr));
-        pushButton_3->setText(QCoreApplication::translate("MainWindow", "    comparaison", nullptr));
+        label_57->setText(QCoreApplication::translate("MainWindow", "matricule:", nullptr));
+        btnCalculerConso->setText(QCoreApplication::translate("MainWindow", "  consommation", nullptr));
+        btn_effacer_conso->setText(QCoreApplication::translate("MainWindow", "effacer", nullptr));
+        label_60->setText(QCoreApplication::translate("MainWindow", "distance parcourue(km):", nullptr));
+        label_61->setText(QCoreApplication::translate("MainWindow", "Carburant consomm\303\251 (L) :", nullptr));
+        label_62->setText(QCoreApplication::translate("MainWindow", "resultat:", nullptr));
+        label_conso_resultat->setText(QString());
         label_24->setText(QString());
     } // retranslateUi
 

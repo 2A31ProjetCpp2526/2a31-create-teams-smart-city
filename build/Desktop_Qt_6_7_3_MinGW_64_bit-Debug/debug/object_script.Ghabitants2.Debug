@@ -1,7 +1,9 @@
 debug/connection.o
+debug/consomation.o
 debug/graph.o
 debug/habitantcrud.o
 debug/main.o
+debug/maintenance.o
 debug/mainwindow.o
 debug/personnel.o
 debug/poubelle.o
@@ -11,4 +13,5 @@ debug/satisfaction.o
 debug/zone.o
 debug/affectationp.o
 debug/moc_graph.o
+debug/moc_maintenance.o
 debug/moc_mainwindow.o

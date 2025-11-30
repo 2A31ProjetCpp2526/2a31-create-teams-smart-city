@@ -10,9 +10,11 @@ CONFIG += c++17
 
 SOURCES += \
     connection.cpp \
+    consomation.cpp \
     graph.cpp \
     habitantcrud.cpp \
     main.cpp \
+    maintenance.cpp \
     mainwindow.cpp \
     personnel.cpp \
     poubelle.cpp \
@@ -24,8 +26,10 @@ SOURCES += \
 
 HEADERS += \
     connection.h \
+    consomation.h \
     graph.h \
     habitantcrud.h \
+    maintenance.h \
     mainwindow.h \
     personnel.h \
     poubelle.h \

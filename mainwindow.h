@@ -18,6 +18,9 @@
 #include "poubelle.h"
 #include "habitantcrud.h"
 #include "vehiculecrud.h"
+#include "maintenance.h"
+#include "consomation.h"
+
 #include "graph.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -104,6 +107,10 @@ private slots:
     void on_btn_vehicule_rechercher_clicked();
     void on_btn_vehicule_afficher_clicked();
     void on_tableView_vehicule_clicked(const QModelIndex &index);
+    void on_btn_vehicule_tri_clicked();
+    void on_btn_vehicule_export_clicked();
+
+
 
 
 
@@ -180,6 +187,10 @@ private:
     Graph *graphScene = nullptr;
     QGraphicsScene *zonesScene = nullptr;
     QGraphicsScene *binsScene = nullptr;
+    void chargerTableVehicules();
+    Maintenance *m_maintenance = nullptr;
+    ConsomationModule *m_consoModule = nullptr;
+    void initialiserTableConso();
 
     struct BinInfo {
         int id = 0;

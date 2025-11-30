@@ -105,6 +105,10 @@
 #include <QPrinter>
 #include <QPageLayout>
 #include <QPainter>
+#include <QMessageBox>
+#include "maintenance.h"
+#include "consomation.h"
+
 
 static const double DEMANDE_DELAI_HEURES = 8.0;
 
@@ -4453,10 +4457,113 @@ void MainWindow::on_btn_vehicule_rechercher_clicked()
 }
 void MainWindow::on_btn_vehicule_afficher_clicked()
 {
-    VehiculeCRUD v;
-    QSqlQueryModel *model = v.afficher();
+    // Réutiliser le même helper que celui appelé au démarrage
+    chargerTableVehicules();
+}
+
+void MainWindow::chargerTableVehicules()
+{
+    if (!ui->tableView_vehicule) return;
+    ui->tableView_vehicule->setModel(VehiculeCRUD::afficher(this));
+}
+
+void MainWindow::on_btn_vehicule_tri_clicked()
+{
+    if (!ui->tableView_vehicule) return;
+
+    // Critère choisi dans le combo de tri des véhicules (ID, type, matricule, capacite)
+    QString critere = ui->comboBox_3 ? ui->comboBox_3->currentText().trimmed() : QString();
+    QString order;
+
+    // Mapper les libellés UI vers les colonnes de la table VEHICULE
+    if (critere.compare("ID", Qt::CaseInsensitive) == 0)
+        order = "ID_VEHICULE ASC";
+    else if (critere.compare("type", Qt::CaseInsensitive) == 0)
+        order = "TYPE_VEHICULE ASC";
+    else if (critere.compare("matricule", Qt::CaseInsensitive) == 0)
+        order = "MATRICULE ASC";
+    else if (critere.compare("capacite", Qt::CaseInsensitive) == 0)
+        // D'abord trier les valeurs numériques de CAPACITE comme des nombres,
+        // puis les valeurs non numériques (ex: 'bfbfb') à la fin.
+        order = "CASE WHEN REGEXP_LIKE(CAPACITE, '^\\d+$') THEN TO_NUMBER(CAPACITE) ELSE NULL END ASC, CAPACITE ASC";
+    else
+        order = "ID_VEHICULE ASC";
+
+    QSqlQueryModel *model = new QSqlQueryModel(this);
+    model->setQuery(
+        "SELECT ID_VEHICULE, TYPE_VEHICULE, MATRICULE, CAPACITE, ITINERAIRE, "
+        "HEURE_DEPART, HEURE_ARRIVEE, STATUT, ZONE, ID_HABITANT FROM VEHICULE ORDER BY " + order);
+
     ui->tableView_vehicule->setModel(model);
     ui->tableView_vehicule->resizeColumnsToContents();
+}
+
+// === Export Vehicule Table to PDF ===
+void MainWindow::on_btn_vehicule_export_clicked()
+{
+    QMessageBox::information(this, "Debug", "Export vehicule function called!");
+    qDebug() << "Export vehicule button clicked";
+
+    if (!ui->tableView_vehicule) {
+        QMessageBox::warning(this, "Export", "La table des véhicules n'est pas disponible.");
+        return;
+    }
+
+    QAbstractItemModel *model = ui->tableView_vehicule->model();
+    if (!model) {
+        QMessageBox::warning(this, "Export", "Aucun modèle de données disponible. Veuillez d'abord afficher les véhicules.");
+        return;
+    }
+
+    if (model->rowCount() == 0) {
+        QMessageBox::warning(this, "Export", "Aucune donnée à exporter. La table est vide.");
+        return;
+    }
+
+    qDebug() << "Model has" << model->rowCount() << "rows";
+
+    QComboBox *formatCombo = findChild<QComboBox*>("comboBox_vehicule_format");
+    QComboBox *qualiteCombo = findChild<QComboBox*>("comboBox_vehicule_qualite");
+    QLineEdit *nomEdit = findChild<QLineEdit*>("nomV");
+    QLineEdit *dossierEdit = findChild<QLineEdit*>("emplacementV");
+
+    const QString format = formatCombo ? formatCombo->currentText().trimmed().toUpper() : QString("A4");
+    const QString qualite = qualiteCombo ? qualiteCombo->currentText().trimmed().toLower() : QString("standard");
+    QString nom = nomEdit ? nomEdit->text().trimmed() : QString();
+    QString dossier = dossierEdit ? dossierEdit->text().trimmed() : QString();
+
+    if (nom.isEmpty()) nom = QString("vehicules_%1").arg(QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss"));
+    if (!nom.endsWith(".pdf", Qt::CaseInsensitive)) nom += ".pdf";
+
+    if (dossier.isEmpty()) {
+        dossier = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    }
+
+    QDir dir(dossier);
+    if (!dir.exists()) {
+        if (!dir.mkpath(".")) {
+            QMessageBox::critical(this, "Export", "Impossible de créer le dossier de destination.");
+            return;
+        }
+    }
+
+    const QString filePath = dir.filePath(nom);
+
+    QPageSize::PageSizeId pageSize = QPageSize::A4;
+    if (format == "A3") pageSize = QPageSize::A3;
+    else if (format == "A4") pageSize = QPageSize::A4;
+    else if (format == "A5") pageSize = QPageSize::A5;
+
+    int dpi = 96;
+    if (qualite == "***" || qualite == "haute" || qualite == "high") dpi = 300;
+    else if (qualite == "standard") dpi = 150; // un peu mieux que 96 pour lisibilité
+
+    const bool ok = HabitantCRUD::exportModelToPdf(model, filePath, pageSize, dpi, "Liste des Véhicules");
+    if (ok) {
+        QMessageBox::information(this, "Export", QString("Fichier PDF généré:\n%1").arg(filePath));
+    } else {
+        QMessageBox::critical(this, "Export", "Échec de la génération du PDF.");
+    }
 }
 // Fonction pour afficher les données dans le QTableView
 void MainWindow::afficherPersonnel(QTableView *tableView, QSqlQueryModel *model)
