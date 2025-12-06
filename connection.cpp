@@ -1,38 +1,24 @@
 #include "connection.h"
-#include <QSqlError>
-#include <QSqlDatabase>
 #include <QDebug>
-Connection* Connection::instance = nullptr;
 
-Connection::Connection() {
-    db = QSqlDatabase::addDatabase("QODBC");
-    db.setDatabaseName("projet2A31");
-    db.setUserName("saim");//inserer nom de l'utilisateur
-    db.setPassword("pass123");//inserer mot de passe de cet utilisateur
-
-
+Connection::Connection()
+{
 }
 
-Connection* Connection::getInstance() {
-    if (instance == nullptr)
-        instance = new Connection();
-    return instance;
-}
+bool Connection::createconnect()
+{
+    bool test = false;
+    // Utilise QODBC et la source de données nommée "Proje_2A2526"
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");
+    db.setDatabaseName("smartcity");//inserer le nom de la source de données
+    db.setUserName("touha");//inserer nom de l'utilisateur
+    db.setPassword("t");//inserer mot de passe de cet utilisateur
 
-QSqlDatabase& Connection::getDatabase() {
-    return db;
-}
-
-bool Connection::openConnection() {
-    if (!db.open()) {
-        qDebug() << "Database connection failed:" << db.lastError().text();
-        return false;
+    if (db.open()) {
+        test = true;
+        qDebug() << "Connected to ODBC DSN Proje_2A2526";
+    } else {
+        qDebug() << "DB open error:" << db.lastError().text();
     }
-    qDebug() << "Database connected successfully!";
-    return true;
-}
-
-void Connection::closeConnection() {
-    if (db.isOpen())
-        db.close();
+    return test;
 }

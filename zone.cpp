@@ -1,101 +1,107 @@
 #include "zone.h"
 #include <QSqlQuery>
-#include <QVariant>
+#include <QSqlQueryModel>
 #include <QDebug>
+#include <QSqlError>
 
+// ==================== Constructors ====================
 Zone::Zone() {}
 
-Zone::Zone(QString id, QString n, QString t, double s, QString loc, QString resp, QString e)
-    : id_zone(id), nom(n), type(t), superficie(s), localisation(loc), responsable(resp), etat(e) {}
+Zone::Zone(int id, int population, double x, double y, double l, double h)
+{
+    this->id_zone = id;
+    this->population = population;
+    this->x = x;
+    this->y = y;
+    this->l = l;
+    this->h = h;
 
-// === Getters ===
-QString Zone::getId() { return id_zone; }
-QString Zone::getNom() { return nom; }
-QString Zone::getType() { return type; }
-double Zone::getSuperficie() { return superficie; }
-QString Zone::getLocalisation() { return localisation; }
-QString Zone::getResponsable() { return responsable; }
-QString Zone::getEtat() { return etat; }
+    this->surface = l * h;
+    this->densite = (surface > 0) ? (population / surface) : 0;
+}
 
-// === Ajouter ===
+// ==================== CRUD ====================
 bool Zone::ajouter()
 {
     QSqlQuery query;
-    query.prepare("INSERT INTO ZONES_VERTES (ID_ZONE, NOM, TYPE, SUPERFICIE, LOCALISATION, RESPONSABLE, ETAT) "
-                  "VALUES (:id, :nom, :type, :sup, :loc, :resp, :etat)");
-    query.bindValue(":id", id_zone);
-    query.bindValue(":nom", nom);
-    query.bindValue(":type", type);
-    query.bindValue(":sup", superficie);
-    query.bindValue(":loc", localisation);
-    query.bindValue(":resp", responsable);
-    query.bindValue(":etat", etat);
+    query.prepare("INSERT INTO GZONE (ID_ZONE, POPULATION, X, Y, L, H, SURFACE, DENSITE) "
+                  "VALUES (:id_zone, :population, :x, :y, :l, :h, :surface, :densite)");
 
-    if (!query.exec()) {
-        m_lastError = query.lastError();
-        qDebug() << "Erreur ajout:" << m_lastError.text();
+    query.bindValue(":id_zone", id_zone);
+    query.bindValue(":population", population);
+    query.bindValue(":x", x);
+    query.bindValue(":y", y);
+    query.bindValue(":l", l);
+    query.bindValue(":h", h);
+    query.bindValue(":surface", surface);
+    query.bindValue(":densite", densite);
+
+    if (query.exec()) {
+        qDebug() << "✅ Zone ajoutée";
+        return true;
+    } else {
+        qDebug() << "❌ Erreur ajout zone:" << query.lastError().text();
         return false;
     }
-    return true;
 }
 
-// === Afficher ===
+bool Zone::supprimer(int id)
+{
+    QSqlQuery query;
+    query.prepare("DELETE FROM GZONE WHERE ID_ZONE = :id_zone");
+    query.bindValue(":id_zone", id);
+
+    if (query.exec()) {
+        qDebug() << "✅ Zone supprimée";
+        return true;
+    } else {
+        qDebug() << "❌ Erreur suppression zone:" << query.lastError().text();
+        return false;
+    }
+}
+
 QSqlQueryModel* Zone::afficher()
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    model->setQuery("SELECT ID_ZONE, NOM, TYPE, SUPERFICIE, LOCALISATION, RESPONSABLE, ETAT FROM ZONES_VERTES");
-
-    model->setHeaderData(0, Qt::Horizontal, QObject::tr("ID Zone"));
-    model->setHeaderData(1, Qt::Horizontal, QObject::tr("Nom"));
-    model->setHeaderData(2, Qt::Horizontal, QObject::tr("Type"));
-    model->setHeaderData(3, Qt::Horizontal, QObject::tr("Superficie"));
-    model->setHeaderData(4, Qt::Horizontal, QObject::tr("Localisation"));
-    model->setHeaderData(5, Qt::Horizontal, QObject::tr("Responsable"));
-    model->setHeaderData(6, Qt::Horizontal, QObject::tr("État"));
-
+    model->setQuery("SELECT * FROM GZONE");
     return model;
 }
 
-// === Supprimer ===
-bool Zone::supprimer(QString id)
+bool Zone::modifier(int id)
 {
     QSqlQuery query;
-    query.prepare("DELETE FROM ZONES_VERTES WHERE ID_ZONE = :id");
-    query.bindValue(":id", id);
+    query.prepare("UPDATE GZONE SET POPULATION=:population, X=:x, Y=:y, L=:l, H=:h, "
+                  "SURFACE=:surface, DENSITE=:densite WHERE ID_ZONE=:id_zone");
 
-    if (!query.exec()) {
-        m_lastError = query.lastError();
-        qDebug() << "Erreur suppression:" << m_lastError.text();
+    query.bindValue(":population", population);
+    query.bindValue(":x", x);
+    query.bindValue(":y", y);
+    query.bindValue(":l", l);
+    query.bindValue(":h", h);
+    query.bindValue(":surface", surface);
+    query.bindValue(":densite", densite);
+    query.bindValue(":id_zone", id);
+
+    if(query.exec()) {
+        qDebug() << "✅ Zone modifiée";
+        return true;
+    } else {
+        qDebug() << "❌ Erreur modification zone:" << query.lastError().text();
         return false;
     }
-    return true;
 }
 
-// === Modifier ===
-bool Zone::modifier(QString id)
+// ==================== Sorting ====================
+QSqlQueryModel* Zone::trier(int index)
 {
-    QSqlQuery query;
-    query.prepare("UPDATE ZONES_VERTES SET NOM = :nom, TYPE = :type, SUPERFICIE = :sup, "
-                  "LOCALISATION = :loc, RESPONSABLE = :resp, ETAT = :etat WHERE ID_ZONE = :id");
-    query.bindValue(":id", id);
-    query.bindValue(":nom", nom);
-    query.bindValue(":type", type);
-    query.bindValue(":sup", superficie);
-    query.bindValue(":loc", localisation);
-    query.bindValue(":resp", responsable);
-    query.bindValue(":etat", etat);
+    QSqlQueryModel* model = new QSqlQueryModel();
+    QString queryStr;
 
-    if (!query.exec()) {
-        m_lastError = query.lastError();
-        qDebug() << "Erreur modification:" << m_lastError.text();
-        return false;
-    }
-    return true;
+    if(index == 0)       // sort by ID_ZONE
+        queryStr = "SELECT * FROM GZONE ORDER BY ID_ZONE";
+    else if(index == 1)  // sort by POPULATION
+        queryStr = "SELECT * FROM GZONE ORDER BY POPULATION";
+
+    model->setQuery(queryStr);
+    return model;
 }
-
-// === Error getter ===
-QSqlError Zone::lastError()
-{
-    return m_lastError;
-}
-
