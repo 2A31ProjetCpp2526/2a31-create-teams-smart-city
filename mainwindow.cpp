@@ -134,7 +134,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onTemperatureRecue);
 
     // ✅ Connexion automatique à l'Arduino sur COM
-    QString port = "COM5";
+    QString port = "COM3";
     qDebug() << "Tentative de connexion automatique à" << port;
 
     if(arduino->connecter(port)) {
@@ -5513,7 +5513,6 @@ void MainWindow::chargerZones()
 // =======================
 // =======================
 // CONSOMMATION CRUD
-// =======================
 void MainWindow::afficherConsommations()
 {
     qDebug() << "========================================";
@@ -5523,6 +5522,9 @@ void MainWindow::afficherConsommations()
     ui->table_surveillance->setColumnCount(10);
     ui->table_surveillance->clearContents();
     ui->table_surveillance->setRowCount(0);
+
+    // DÉSACTIVER les couleurs alternées
+    ui->table_surveillance->setAlternatingRowColors(false);
 
     // Définir les en-têtes
     QStringList headers;
@@ -5557,33 +5559,102 @@ void MainWindow::afficherConsommations()
     while(query.next()) {
         ui->table_surveillance->insertRow(row);
 
-        // Colonnes 0-8
+        // Récupérer les valeurs importantes
+        double consommation = query.value(2).toDouble();  // EAU_CONSO (colonne 2)
+        double moyenne = query.value(3).toDouble();       // MOY_CONSO (colonne 3)
+        double temperature = query.value(9).toDouble();   // TEMP (colonne 9)
+        QString typeAnomalie = query.value(4).toString(); // TYPE_ANOMALIE (colonne 4)
+
+        // =======================
+        // COLONNES 0-8 (sans couleur spéciale)
+        // =======================
         for(int col = 0; col < 9; col++) {
             QTableWidgetItem *item = new QTableWidgetItem(query.value(col).toString());
             item->setTextAlignment(Qt::AlignCenter);
+
+            // 🎨 COLORIER SEULEMENT LA COLONNE "Type Anomalie" (colonne 4)
+            if(col == 4) {  // Type Anomalie
+                if(typeAnomalie == "Fuite") {
+                    item->setBackground(QColor(255, 200, 200)); // Rouge clair
+                    item->setForeground(Qt::darkRed);
+                }
+                else if(typeAnomalie == "Gaspillage") {
+                    item->setBackground(QColor(255, 235, 155)); // Orange clair
+                    item->setForeground(Qt::darkYellow);
+                }
+                else if(typeAnomalie == "Sous-Consommation") {
+                    item->setBackground(QColor(200, 230, 255)); // Bleu clair
+                    item->setForeground(Qt::darkBlue);
+                }
+                else { // Normal
+                    item->setBackground(QColor(220, 255, 220)); // Vert clair
+                    item->setForeground(Qt::darkGreen);
+                }
+            }
+            else if(col == 2) {  // 🎨 COLONNE "Eau_conso" (consommation)
+                double ratio = (moyenne > 0) ? (consommation / moyenne) : 1.0;
+
+                if(ratio > 1.5) { // >150%
+                    item->setBackground(QColor(255, 245, 200)); // Jaune clair
+                    item->setForeground(Qt::darkYellow);
+                }
+                else if(ratio < 0.7) { // <70%
+                    item->setBackground(QColor(230, 240, 255)); // Bleu clair
+                    item->setForeground(Qt::darkBlue);
+                }
+                else {
+                    item->setBackground(QColor(240, 255, 240)); // Vert clair
+                    item->setForeground(Qt::darkGreen);
+                }
+            }
+
             ui->table_surveillance->setItem(row, col, item);
         }
 
-        // COLONNE 9 : Température
-        double temp = query.value(9).toDouble();
+        // =======================
+        // 🎨 COLONNE 9 : TEMPÉRATURE (COLORÉE)
+        // =======================
         QTableWidgetItem *tempItem = new QTableWidgetItem(
-            QString::number(temp, 'f', 1) + " °C"
+            QString::number(temperature, 'f', 1) + " °C"
         );
-
         tempItem->setTextAlignment(Qt::AlignCenter);
+
+        // 🎨 COULEUR SELON LA TEMPÉRATURE
+        if(temperature < 18.0 && temperature > 0.0) {
+            tempItem->setBackground(QColor(173, 216, 230)); // Bleu froid
+            tempItem->setForeground(Qt::darkBlue);
+        }
+        else if(temperature > 30.0) {
+            tempItem->setBackground(QColor(255, 182, 193)); // Rouge chaud
+            tempItem->setForeground(Qt::darkRed);
+        }
+        else if(temperature > 0.0) {
+            tempItem->setBackground(QColor(144, 238, 144)); // Vert normal
+            tempItem->setForeground(Qt::darkGreen);
+        }
+        else {
+            tempItem->setBackground(QColor(240, 240, 240)); // Gris (pas de mesure)
+            tempItem->setForeground(Qt::darkGray);
+        }
+
         ui->table_surveillance->setItem(row, 9, tempItem);
 
         row++;
     }
 
+    // Ajuster la largeur des colonnes
     ui->table_surveillance->resizeColumnsToContents();
 
+    // Ajouter un peu de marge
+    for(int col = 0; col < ui->table_surveillance->columnCount(); col++) {
+        int width = ui->table_surveillance->columnWidth(col);
+        ui->table_surveillance->setColumnWidth(col, width + 10);
+    }
+
     qDebug() << "✅" << row << "lignes affichées";
+    qDebug() << "🎨 Colonnes colorées : Type Anomalie, Eau_conso, Température";
     qDebug() << "========================================";
 }
-
-
-
 // =======================
 // AJOUT CONSOMMATION AVEC SMS AUTOMATIQUE
 // =======================
@@ -6292,16 +6363,20 @@ void MainWindow::on_btnafficher_clicked()
 // ========== SLOT TEMPÉRATURE ==========
 void MainWindow::onTemperatureRecue(double temp)
 {
-    qDebug() << "🌡️ Température:" << temp << "°C";
+    qDebug() << "🌡️ Température reçue:" << temp << "°C";
 
     derniereTemperature = temp;
 
-    // Afficher dans label
+    // 1. Afficher dans le label
     if(ui->labeltemperature) {
         ui->labeltemperature->setText(QString::number(temp, 'f', 1) + " °C");
+        ui->labeltemperature->setStyleSheet(
+            QString("color: %1; font-weight: bold; font-size: 14px;")
+            .arg(temp > 30.0 ? "red" : (temp < 18.0 ? "blue" : "green"))
+        );
     }
 
-
+    // 2. Mettre à jour la base de données
     QSqlQuery query;
     query.prepare("UPDATE CONSOMMATION SET TEMPERATURE = :temp "
                   "WHERE ID_CONSO = (SELECT MAX(ID_CONSO) FROM CONSOMMATION)");
@@ -6310,14 +6385,25 @@ void MainWindow::onTemperatureRecue(double temp)
     if(query.exec()) {
         qDebug() << "✅ Température mise à jour dans la base";
 
-        // Rafraîchir uniquement la première ligne du tableau
+        // 3. OPTION A : Rafraîchir UNIQUEMENT la dernière ligne (plus rapide)
         afficherDerniereConsommation();
+
+        // 4. OPTION B : Rafraîchir TOUT le tableau (pour les couleurs)
+        // Décommente la ligne suivante si tu veux que TOUTES les couleurs se mettent à jour :
+        // afficherConsommations();
+
+    } else {
+        qDebug() << "❌ Erreur mise à jour température:" << query.lastError().text();
     }
 }
 
 void MainWindow::afficherDerniereConsommation()
 {
-    // Charger uniquement la dernière ligne au lieu de tout le tableau
+    if(ui->table_surveillance->rowCount() == 0) {
+        afficherConsommations(); // Si tableau vide, le remplir complètement
+        return;
+    }
+
     QSqlQuery query;
     query.prepare("SELECT ID_HABITAT, ID_CONSO, EAU_CONSO, MOY_CONSO, "
                   "TYPE_ANOMALIE, SOURCE_DETECTION, "
@@ -6330,17 +6416,77 @@ void MainWindow::afficherDerniereConsommation()
 
     if(query.exec() && query.next()) {
         // Mettre à jour la ligne 0 du tableau
+        double consommation = query.value(2).toDouble();
+        double moyenne = query.value(3).toDouble();
+        double temperature = query.value(9).toDouble();
+        QString typeAnomalie = query.value(4).toString();
+
+        // Mettre à jour toutes les cellules de la première ligne
         for(int col = 0; col < 9; col++) {
-            ui->table_surveillance->item(0, col)->setText(query.value(col).toString());
+            QTableWidgetItem *item = ui->table_surveillance->item(0, col);
+            if(item) {
+                item->setText(query.value(col).toString());
+
+                // 🎨 APPLIQUER LES COULEURS (comme dans afficherConsommations)
+                if(col == 4) { // Type Anomalie
+                    if(typeAnomalie == "Fuite") {
+                        item->setBackground(QColor(255, 200, 200));
+                        item->setForeground(Qt::darkRed);
+                    }
+                    else if(typeAnomalie == "Gaspillage") {
+                        item->setBackground(QColor(255, 235, 155));
+                        item->setForeground(Qt::darkYellow);
+                    }
+                    else if(typeAnomalie == "Sous-Consommation") {
+                        item->setBackground(QColor(200, 230, 255));
+                        item->setForeground(Qt::darkBlue);
+                    }
+                    else {
+                        item->setBackground(QColor(220, 255, 220));
+                        item->setForeground(Qt::darkGreen);
+                    }
+                }
+                else if(col == 2) { // Eau_conso
+                    double ratio = (moyenne > 0) ? (consommation / moyenne) : 1.0;
+                    if(ratio > 1.5) {
+                        item->setBackground(QColor(255, 245, 200));
+                        item->setForeground(Qt::darkYellow);
+                    }
+                    else if(ratio < 0.7) {
+                        item->setBackground(QColor(230, 240, 255));
+                        item->setForeground(Qt::darkBlue);
+                    }
+                    else {
+                        item->setBackground(QColor(240, 255, 240));
+                        item->setForeground(Qt::darkGreen);
+                    }
+                }
+            }
         }
 
-        // Température
-        double temp = query.value(9).toDouble();
+        // 🎨 Mettre à jour la cellule température
         QTableWidgetItem *tempItem = ui->table_surveillance->item(0, 9);
-        tempItem->setText(QString::number(temp, 'f', 1) + " °C");
+        if(tempItem) {
+            tempItem->setText(QString::number(temperature, 'f', 1) + " °C");
 
+            // Appliquer la couleur température
+            if(temperature < 18.0 && temperature > 0.0) {
+                tempItem->setBackground(QColor(173, 216, 230));
+                tempItem->setForeground(Qt::darkBlue);
+            }
+            else if(temperature > 30.0) {
+                tempItem->setBackground(QColor(255, 182, 193));
+                tempItem->setForeground(Qt::darkRed);
+            }
+            else if(temperature > 0.0) {
+                tempItem->setBackground(QColor(144, 238, 144));
+                tempItem->setForeground(Qt::darkGreen);
+            }
+        }
 
-}}
+        qDebug() << "✅ Dernière consommation rafraîchie avec couleurs";
+    }
+}
 
 void MainWindow::on_irl_clicked()
 {

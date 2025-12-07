@@ -3111,14 +3111,13 @@ QHeaderView::section {
     border: 1px solid #2980b9;             /* Bordure de l’en-tête */
 }
 
-/* Les cellules */
 QTableWidget::item {
-    background-color: rgb(255, 255, 255);  /* Fond blanc des cellules */
-    color: rgb(0, 51, 102);                /* Texte bleu foncé */
-    padding: 4px;                           /* Espacement intérieur */
-    selection-background-color: rgb(41, 128, 185); /* Fond d’une cellule sélectionnée */
-    selection-color: white;                 /* Texte de la cellule sélectionnée */
+    color: rgb(0, 51, 102);
+    padding: 4px;
+    selection-background-color: rgb(41, 128, 185);
+    selection-color: white;
 }
+
 
 /* Lignes impaires et paires (optionnel pour effet zébré) */
 QTableWidget::item:!selected:alternate {
@@ -9934,7 +9933,7 @@ QPushButton:pressed {
      <x>0</x>
      <y>0</y>
      <width>1446</width>
-     <height>25</height>
+     <height>33</height>
     </rect>
    </property>
   </widget>
