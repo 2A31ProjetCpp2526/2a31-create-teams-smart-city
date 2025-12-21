@@ -3,9 +3,6 @@
 #include <QTextCharFormat>
 #include <QBrush>
 #include <QColor>
-#include <QCalendarWidget>
-#include <QMap>
-#include <QDate>
 
 CalendrierZones::CalendrierZones(QWidget *parent)
     : QWidget(parent)
@@ -18,7 +15,7 @@ CalendrierZones::CalendrierZones(QWidget *parent)
     setLayout(layout);
 
     connect(calendar, &QCalendarWidget::clicked, this, [this](const QDate &date){
-        emit zoneClicked(date);
+        emit zoneClicked(date); // notify MainWindow
     });
 }
 
@@ -74,26 +71,13 @@ int CalendrierZones::findZoneIndex(const QDate &date, const QString &zoneId) con
 
 void CalendrierZones::highlightZones()
 {
-    calendar->setDateTextFormat(QDate(), QTextCharFormat()); // clear all previous formats
+    QTextCharFormat format;
+    format.setBackground(QBrush(QColor("#a5d6a7"))); // green
+    format.setForeground(QBrush(Qt::black));
 
-    // Loop through all dates with events
+    calendar->setDateTextFormat(QDate(), QTextCharFormat()); // clear previous
+
     for (auto it = zones.begin(); it != zones.end(); ++it) {
-        QTextCharFormat format;
-
-        // Choose color based on number of zones/events (you can customize this)
-        if (it.value().size() == 1) format.setBackground(QBrush(QColor("#a5d6a7"))); // green
-        else if (it.value().size() == 2) format.setBackground(QBrush(QColor("#ffcc80"))); // orange
-        else format.setBackground(QBrush(QColor("#ef9a9a"))); // red for many events
-
-        format.setForeground(QBrush(Qt::black));
-
-        // Create a tooltip showing all events on that date
-        QString tooltipText;
-        for (const ZoneData &z : it.value()) {
-            tooltipText += z.zoneId + ": " + z.events.join(", ") + "\n";
-        }
-        format.setToolTip(tooltipText.trimmed());
-
         calendar->setDateTextFormat(it.key(), format);
     }
 }
@@ -102,18 +86,4 @@ void CalendrierZones::refresh()
 {
     highlightZones();
 }
-void CalendrierZones::setBackgroundColor(const QColor &color)
-{
-    // Option 1: using palette
-    calendar->setAutoFillBackground(true);
-    QPalette pal = calendar->palette();
-    pal.setColor(QPalette::Base, color); // calendar grid background
-    calendar->setPalette(pal);
-
-    // Option 2: using stylesheet (uncomment if you prefer)
-    // calendar->setStyleSheet(QString(
-    //     "QCalendarWidget QWidget { background-color: %1; }"
-    // ).arg(color.name()));
-}
-
 

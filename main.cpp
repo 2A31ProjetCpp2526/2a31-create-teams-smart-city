@@ -1,9 +1,6 @@
 #include <QApplication>
 #include "mainwindow.h"
 #include "connection.h"
-#include "SportsChallengeDialog.h"
-#include"SortingGameWidget.h"
-#include"demandedialog.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,26 +11,9 @@ int main(int argc, char *argv[])
 
     // Initialize database connection
     if (!Connection::getInstance()->openConnection()) {
-        qDebug() << "Erreur: Impossible de se connecter à la base de données.";
+        //qDebug() << "Erreur: Impossible de se connecter à la base de données.";
         return -1;
     }
-
-    SortingGameWidget *Dlg= new SortingGameWidget;
-    Dlg->show();
-
-    DemandeDialog *DLG=new DemandeDialog ;  // Pass the connected database
-    DLG->show();                   // Open the dialog modally
-
-
-
-    SportsChallengeDialog *dlg = new SportsChallengeDialog;
-    dlg->show(); // non-blocking
-
-
-   //SportsChallengeDialog dlg;
-    //dlg.show();
-    //dlg.exec();
-
 
     MainWindow w;
     w.show();
@@ -45,6 +25,4 @@ int main(int argc, char *argv[])
 
     return result;
 }
-
-
 

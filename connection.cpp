@@ -25,10 +25,10 @@ QSqlDatabase& Connection::getDatabase() {
 
 bool Connection::openConnection() {
     if (!db.open()) {
-        qDebug() << "Database connection failed:" << db.lastError().text();
+        //qDebug() << "Database connection failed:" << db.lastError().text();
         return false;
     }
-    qDebug() << "Database connected successfully!";
+    //qDebug() << "Database connected successfully!";
     return true;
 }
 
