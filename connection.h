@@ -1,14 +1,21 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QSqlQuery>
+
+#include <QtSql/QSqlDatabase>
+#include <QDebug>
 
 class Connection
 {
+private:
+    static Connection *instance;
+    QSqlDatabase db;
+    Connection();  // Private constructor for Singleton
+
 public:
-    Connection();
-    bool createconnect();
+    static Connection* getInstance();
+    QSqlDatabase& getDatabase();
+    bool openConnection();
+    void closeConnection();
 };
 
 #endif // CONNECTION_H

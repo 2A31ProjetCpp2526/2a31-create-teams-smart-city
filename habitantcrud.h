@@ -3,35 +3,23 @@
 
 #include <QString>
 #include <QSqlQueryModel>
-#include <QRegularExpression>
-#include <QAbstractItemModel>
-#include <QPageSize>
+#include <QObject>
 
 class HabitantCRUD
 {
-private:
-    int id;
-    QString nom, prenom, adresse, zone, situation, contact, statut, besoins, satisfaction;
-
 public:
     HabitantCRUD();
-    HabitantCRUD(int, QString, QString, QString, QString, QString, QString, QString, QString, QString);
+    HabitantCRUD(int id, QString nom, QString adresse);
 
-    // CRUD
     bool ajouter();
-    bool modifier(int id);
+    QSqlQueryModel* afficher(QObject *parent = nullptr);
     bool supprimer(int id);
-    static QSqlQueryModel* afficher(QObject *parent = nullptr);
+    bool modifier(int id);
 
-    // Validation
-    bool validerChamps(QString &messageErreur);
-
-    // Export helpers
-    static bool exportModelToPdf(const QAbstractItemModel *model,
-                                 const QString &filePath,
-                                 QPageSize::PageSizeId pageSize,
-                                 int dpi,
-                                 const QString &title);
+private:
+    int id;
+    QString nom;
+    QString adresse;
 };
 
 #endif // HABITANTCRUD_H

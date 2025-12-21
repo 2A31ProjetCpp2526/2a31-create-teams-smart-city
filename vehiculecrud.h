@@ -6,25 +6,32 @@
 
 class VehiculeCRUD
 {
-private:
+public:
+    // Constructeurs
+    VehiculeCRUD();
+    VehiculeCRUD(int id, QString type, QString matricule, QString capacite,
+                 QString itineraire, QString heureDepart, QString heureArrivee,
+                 QString statut, QString zone, int idHabitant);
+
+    // Attributs
     int id;
-    QString type, matricule, capacite, itineraire;
-    QString heureDepart, heureArrivee, statut, zone;
+    QString type;
+    QString matricule;
+    QString capacite;
+    QString itineraire;
+    QString heureDepart;
+    QString heureArrivee;
+    QString statut;
+    QString zone;
     int idHabitant;
 
-public:
-    VehiculeCRUD();
-    VehiculeCRUD(int, QString, QString, QString, QString, QString, QString, QString, QString, int);
-
-    // CRUD
+    // Méthodes CRUD
+    bool validerChamps(QString &messageErreur);
     bool ajouter();
     bool modifier(int id);
     bool supprimer(int id);
-    static QSqlQueryModel* afficher(QObject *parent = nullptr);
-    static QSqlQueryModel* rechercher(const QString &text, QObject *parent = nullptr);
-
-    // Validation
-    bool validerChamps(QString &messageErreur);
+    QSqlQueryModel* afficher(QObject *parent = nullptr);
+    QSqlQueryModel* rechercher(const QString &text, QObject *parent = nullptr);
 };
 
 #endif // VEHICULECRUD_H

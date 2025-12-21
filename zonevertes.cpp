@@ -1,14 +1,12 @@
-#include "zone.h"
+#include "zonevertes.h"
 #include <QSqlQuery>
 #include <QVariant>
 #include <QDebug>
-#include "rainsensor.h"
 
+Zone::Zone() {}
 
-Zone::Zone() : pluie(0.0) {}
-
-Zone::Zone(QString id, QString n, QString t, double s, QString loc, QString resp, QString e, double p)
-    : id_zone(id), nom(n), type(t), superficie(s), localisation(loc), responsable(resp), etat(e), pluie(p) {}
+Zone::Zone(QString id, QString n, QString t, double s, QString loc, QString resp, QString e)
+    : id_zone(id), nom(n), type(t), superficie(s), localisation(loc), responsable(resp), etat(e) {}
 
 // === Getters ===
 QString Zone::getId() { return id_zone; }
@@ -18,15 +16,13 @@ double Zone::getSuperficie() { return superficie; }
 QString Zone::getLocalisation() { return localisation; }
 QString Zone::getResponsable() { return responsable; }
 QString Zone::getEtat() { return etat; }
-double Zone::getPluie() { return pluie; }
 
 // === Ajouter ===
 bool Zone::ajouter()
 {
     QSqlQuery query;
-    query.prepare("INSERT INTO ZONES_VERTES "
-                  "(ID_ZONE, NOM, TYPE, SUPERFICIE, LOCALISATION, RESPONSABLE, ETAT, PLUIE) "
-                  "VALUES (:id, :nom, :type, :sup, :loc, :resp, :etat, :pluie)");
+    query.prepare("INSERT INTO ZONES_VERTES (ID_ZONE, NOM, TYPE, SUPERFICIE, LOCALISATION, RESPONSABLE, ETAT) "
+                  "VALUES (:id, :nom, :type, :sup, :loc, :resp, :etat)");
     query.bindValue(":id", id_zone);
     query.bindValue(":nom", nom);
     query.bindValue(":type", type);
@@ -34,20 +30,21 @@ bool Zone::ajouter()
     query.bindValue(":loc", localisation);
     query.bindValue(":resp", responsable);
     query.bindValue(":etat", etat);
-    query.bindValue(":pluie", pluie);
 
     if (!query.exec()) {
         m_lastError = query.lastError();
+        //qDebug() << "Erreur ajout:" << m_lastError.text();
         return false;
     }
     return true;
+
 }
 
 // === Afficher ===
 QSqlQueryModel* Zone::afficher()
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    model->setQuery("SELECT ID_ZONE, NOM, TYPE, SUPERFICIE, LOCALISATION, RESPONSABLE, ETAT, PLUIE FROM ZONES_VERTES");
+    model->setQuery("SELECT ID_ZONE, NOM, TYPE, SUPERFICIE, LOCALISATION, RESPONSABLE, ETAT FROM ZONES_VERTES");
 
     model->setHeaderData(0, Qt::Horizontal, QObject::tr("ID Zone"));
     model->setHeaderData(1, Qt::Horizontal, QObject::tr("Nom"));
@@ -56,7 +53,6 @@ QSqlQueryModel* Zone::afficher()
     model->setHeaderData(4, Qt::Horizontal, QObject::tr("Localisation"));
     model->setHeaderData(5, Qt::Horizontal, QObject::tr("Responsable"));
     model->setHeaderData(6, Qt::Horizontal, QObject::tr("État"));
-    model->setHeaderData(7, Qt::Horizontal, QObject::tr("Pluie"));
 
     return model;
 }
@@ -70,9 +66,11 @@ bool Zone::supprimer(QString id)
 
     if (!query.exec()) {
         m_lastError = query.lastError();
+        //qDebug() << "Erreur suppression:" << m_lastError.text();
         return false;
     }
     return true;
+
 }
 
 // === Modifier ===
@@ -80,8 +78,7 @@ bool Zone::modifier(QString id)
 {
     QSqlQuery query;
     query.prepare("UPDATE ZONES_VERTES SET NOM = :nom, TYPE = :type, SUPERFICIE = :sup, "
-                  "LOCALISATION = :loc, RESPONSABLE = :resp, ETAT = :etat, PLUIE = :pluie "
-                  "WHERE ID_ZONE = :id");
+                  "LOCALISATION = :loc, RESPONSABLE = :resp, ETAT = :etat WHERE ID_ZONE = :id");
     query.bindValue(":id", id);
     query.bindValue(":nom", nom);
     query.bindValue(":type", type);
@@ -89,13 +86,14 @@ bool Zone::modifier(QString id)
     query.bindValue(":loc", localisation);
     query.bindValue(":resp", responsable);
     query.bindValue(":etat", etat);
-    query.bindValue(":pluie", pluie);
 
     if (!query.exec()) {
         m_lastError = query.lastError();
+        //qDebug() << "Erreur modification:" << m_lastError.text();
         return false;
     }
     return true;
+
 }
 
 // === Error getter ===
@@ -103,8 +101,6 @@ QSqlError Zone::lastError()
 {
     return m_lastError;
 }
-
-// === Trier ===
 QSqlQueryModel* Zone::afficherTrie(int colonne, bool asc)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
@@ -119,7 +115,6 @@ QSqlQueryModel* Zone::afficherTrie(int colonne, bool asc)
     case 4: colonneBD = "LOCALISATION"; break;
     case 5: colonneBD = "RESPONSABLE"; break;
     case 6: colonneBD = "ETAT"; break;
-    case 7: colonneBD = "PLUIE"; break;
     default: colonneBD = "ID_ZONE";
     }
 
@@ -130,7 +125,6 @@ QSqlQueryModel* Zone::afficherTrie(int colonne, bool asc)
     return model;
 }
 
-// === Rechercher ===
 QSqlQueryModel* Zone::rechercher(const QString &mot)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
@@ -144,17 +138,3 @@ QSqlQueryModel* Zone::rechercher(const QString &mot)
 
     return model;
 }
-bool Zone::setPluieAllZones(double value)
-{
-    QSqlQuery query;
-    query.prepare("UPDATE ZONES_VERTES SET PLUIE = :pluie");
-    query.bindValue(":pluie", value);
-
-    if(!query.exec()) {
-        m_lastError = query.lastError();
-        qDebug() << "Error updating pluie for all zones:" << m_lastError.text();
-        return false;
-    }
-    return true;
-}
-// In your MainWindow.cpp constructor or setup
